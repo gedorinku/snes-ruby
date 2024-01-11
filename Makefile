@@ -11,14 +11,17 @@ include ${PVSNESLIB_HOME}/devkitsnes/snes_rules
 # ROMNAME is used in snes_rules file
 export ROMNAME := hello_world
 
+# all: src/main.rb.bytecode.c bitmaps $(ROMNAME).sfc
 all: pvsneslib src/main.rb.bytecode.c bitmaps $(ROMNAME).sfc
 
 clean: cleanBuildRes cleanRom cleanGfx
-	$(MAKE) -C $(PVSNESLIB_HOME) clean
+	# $(MAKE) -C $(PVSNESLIB_HOME) clean
 	
 #---------------------------------------------------------------------------------
-pvsneslib:
-	$(MAKE) -C $(PVSNESLIB_HOME)
+pvsneslib: FORCE
+	# FIXME:
+	# $(MAKE) -C $(PVSNESLIB_HOME)
+
 pvsneslibfont.pic: pvsneslibfont.png
 	@echo convert font with no tile reduction ... $(notdir $@)
 	$(GFXCONV) -n -gs8 -po16 -pc16 -pe0 -mR! -m! -fpng $<
@@ -27,3 +30,5 @@ bitmaps : pvsneslibfont.pic
 
 src/main.rb.bytecode.c: src/main.rb
 	mrbc --remove-lv -Bmrbbuf -o src/main.rb.bytecode.c $<
+
+FORCE:
