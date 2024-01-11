@@ -1,0 +1,33 @@
+# all other type of files generated automatically
+linkfile
+*.o
+*.a
+*.d
+*.obj
+*.sfc
+*.sym
+*.pic
+*.pal
+*.map
+*.pc7
+*.mp7
+*.bnk
+*.til
+*.clm
+*.brr
+*.asp
+*.ps
+soundbank.asm
+soundbank.h
+*.log
+
+# debug files
+*.dbg
+
+*.mrb
+*.bytecode.c
+
+.envrc
+
+# TODO: Add font
+pvsneslibfont.png
