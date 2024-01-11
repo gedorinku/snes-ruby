@@ -17,6 +17,8 @@
 #include "vm_config.h"
 #include <stdlib.h>
 #include <stdint.h>
+// FIXME: error: 'UINT16_MAX' undeclared
+# define UINT16_MAX (65535)
 #include <string.h>
 #include <assert.h>
 //@endcond
