@@ -1,34 +1,65 @@
-export PVSNESLIB_HOME := $(dir $(realpath $(firstword $(MAKEFILE_LIST))))pvsneslib
-PVSNESLIB_DEBUG = 1
+CC	:= WDC816CC.exe
+AS	:= WDC816AS.exe
+LD	:= WDCLN.exe
 
-CFLAGS += -Isrc/mrubyc -Isrc/musl -D MRBC_USE_FLOAT=0
+target	:= $(shell basename $(CURDIR))
+output	:= $(target).sfc
+build	:= build
+listing	:= listing
+# sources	:= src
+sources	:= src src/mrubyc
+incdirs	:= $(sources) $(build)
 
-include ${PVSNESLIB_HOME}/devkitsnes/snes_rules
+cfiles	:= $(foreach dir,$(sources),$(notdir $(wildcard $(dir)/*.c)))
+sfiles	:= $(foreach dir,$(sources),$(notdir $(wildcard $(dir)/*.asm)))
+ofiles	:= $(cfiles:%.c=build/%.o) $(sfiles:%.asm=build/%.o)
+listfiles:= $(cfiles:%.c=listing/%.asm)
 
-.PHONY: bitmaps all
+LDFLAGS	:= -B -E -T -P00 -F hirom.cfg
+libs	:= -LCL
 
-#---------------------------------------------------------------------------------
-# ROMNAME is used in snes_rules file
-export ROMNAME := hello_world
+includes:= $(foreach dir,$(incdirs),-I$(dir))
 
-# all: src/main.rb.bytecode.c bitmaps $(ROMNAME).sfc
-all: pvsneslib src/main.rb.bytecode.c bitmaps $(ROMNAME).sfc
+export VPATH	:= $(foreach dir,$(sources),$(CURDIR)/$(dir))
+#--------------------------------------------------
+.PHONY: all debug release $(listing) clean run run2
 
-clean: cleanBuildRes cleanRom cleanGfx
-	# $(MAKE) -C $(PVSNESLIB_HOME) clean
-	
-#---------------------------------------------------------------------------------
-pvsneslib: FORCE
-	# FIXME:
-	# $(MAKE) -C $(PVSNESLIB_HOME)
+all: release
 
-pvsneslibfont.pic: pvsneslibfont.png
-	@echo convert font with no tile reduction ... $(notdir $@)
-	$(GFXCONV) -n -gs8 -po16 -pc16 -pe0 -mR! -m! -fpng $<
+debug: CFLAGS	:= -ML -SI -SP -WL -WP -DDEBUG -DSIZEOF_INT=2 -DSIZEOF_LONG=4 -DMRBC_USE_FLOAT=0
+debug: C2SFLAGS	:= -ML -AT -SI -SP -WL -WP -DDEBUG -DSIZEOF_INT=2 -DSIZEOF_LONG=4 -DMRBC_USE_FLOAT=0
+debug: ASFLAGS	:= -S -DDEBUG
+debug: $(listing) $(listfiles) $(output)
 
-bitmaps : pvsneslibfont.pic
+release: CFLAGS		:= -ML -SOP -WL -WP -DSIZEOF_INT=2 -DSIZEOF_LONG=4 -DMRBC_USE_FLOAT=0
+release: C2SFLAGS	:= -ML -AT -SOP -WL -WP -DSIZEOF_INT=2 -DSIZEOF_LONG=4 -DMRBC_USE_FLOAT=0
+release: ASFLAGS	:= -S
+release: $(listing) $(listfiles) $(output)
 
-src/main.rb.bytecode.c: src/main.rb
-	mrbc --remove-lv -Bmrbbuf -o src/main.rb.bytecode.c $<
+$(build):
+	@[ -d $@ ] || mkdir -p $@
 
-FORCE:
+$(output): $(build) $(ofiles)
+
+
+$(listing): $(cfiles)
+	@[ -d $@ ] || mkdir -p $@
+
+clean:
+	rm -rf $(build) $(output) $(target).bnk $(target).sym $(target).map $(listing)
+
+%.asm : %.png %.grit
+	$(snesgrit) $<
+
+# build/%.o : %.c
+# 	$(CC) $(includes) $(CFLAGS) -O $@ $(subst /mnt/c,c:\,$<)
+
+build/%.o : %.asm
+	$(AS) $(includes) $(ASFLAGS) -O $@ $(subst /mnt/c,c:\,$<)
+
+listing/%.asm : %.c
+	$(CC) $(includes) $(C2SFLAGS) -O $@ $(subst /mnt/c,c:\,$<)
+
+%.sfc:
+	$(LD) $(LDFLAGS) $(ofiles) -O $@ $(libs)
+	@sed -e "s/^\(\w\)/;\1/g" $(target).map | sed -e "s/^\t//g" > $(target).sym
