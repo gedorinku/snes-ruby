@@ -235,7 +235,7 @@ static MEMORY_POOL *memory_pool;
   @param  x	target (16bit unsigned)
   @retval int	nlz value
 */
-static inline int nlz16(uint16_t x)
+static int nlz16(uint16_t x)
 {
   if( x == 0 ) return 16;
 
@@ -253,7 +253,7 @@ static inline int nlz16(uint16_t x)
   @param  x	target (8bit unsigned)
   @retval int	nlz value
 */
-static inline int nlz8(uint8_t x)
+static int nlz8(uint8_t x)
 {
   if( x == 0 ) return 8;
 
@@ -270,7 +270,7 @@ static inline int nlz8(uint8_t x)
   @param  alloc_size	alloc size
   @retval unsigned int	index of free_blocks
 */
-static inline unsigned int calc_index(MRBC_ALLOC_MEMSIZE_T alloc_size)
+static unsigned int calc_index(MRBC_ALLOC_MEMSIZE_T alloc_size)
 {
   // check overflow
   if( (alloc_size >> (MRBC_ALLOC_FLI_BIT_WIDTH
@@ -371,7 +371,7 @@ static void remove_free_block(MEMORY_POOL *pool, FREE_BLOCK *target)
   @retval NULL		no split.
   @retval FREE_BLOCK *	pointer to splitted free block.
 */
-static inline FREE_BLOCK* split_block(FREE_BLOCK *target, MRBC_ALLOC_MEMSIZE_T size)
+static FREE_BLOCK* split_block(FREE_BLOCK *target, MRBC_ALLOC_MEMSIZE_T size)
 {
   assert( BLOCK_SIZE(target) >= size );
   if( (BLOCK_SIZE(target) - size) <= MRBC_MIN_MEMORY_BLOCK_SIZE ) return NULL;
@@ -393,7 +393,7 @@ static inline FREE_BLOCK* split_block(FREE_BLOCK *target, MRBC_ALLOC_MEMSIZE_T s
   @param  target	pointer to free block 1
   @param  next	pointer to free block 2
 */
-static inline void merge_block(FREE_BLOCK *target, FREE_BLOCK *next)
+static void merge_block(FREE_BLOCK *target, FREE_BLOCK *next)
 {
   assert(target < next);
 

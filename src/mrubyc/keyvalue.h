@@ -93,7 +93,7 @@ void mrbc_kv_dup(const mrbc_kv_handle *src, mrbc_kv_handle *dst);
 //================================================================
 /*! get size
 */
-static inline int mrbc_kv_size(const mrbc_kv_handle *kvh)
+static int mrbc_kv_size(const mrbc_kv_handle *kvh)
 {
   return kvh->n_stored;
 }
@@ -101,7 +101,7 @@ static inline int mrbc_kv_size(const mrbc_kv_handle *kvh)
 //================================================================
 /*! iterator constructor
 */
-static inline mrbc_kv_iterator mrbc_kv_iterator_new( const mrbc_kv_handle *h )
+static mrbc_kv_iterator mrbc_kv_iterator_new( const mrbc_kv_handle *h )
 {
   mrbc_kv_iterator ite;
 
@@ -114,7 +114,7 @@ static inline mrbc_kv_iterator mrbc_kv_iterator_new( const mrbc_kv_handle *h )
 //================================================================
 /*! iterator has_next?
 */
-static inline int mrbc_kv_i_has_next( const mrbc_kv_iterator *ite )
+static int mrbc_kv_i_has_next( const mrbc_kv_iterator *ite )
 {
   return ite->i < ite->target->n_stored;
 }
@@ -122,7 +122,7 @@ static inline int mrbc_kv_i_has_next( const mrbc_kv_iterator *ite )
 //================================================================
 /*! iterator getter
 */
-static inline mrbc_kv *mrbc_kv_i_next( mrbc_kv_iterator *ite )
+static mrbc_kv *mrbc_kv_i_next( mrbc_kv_iterator *ite )
 {
   return &ite->target->data[ ite->i++ ];
 }

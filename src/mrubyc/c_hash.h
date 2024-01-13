@@ -81,7 +81,7 @@ mrbc_value mrbc_hash_dup(struct VM *vm, mrbc_value *src);
 //================================================================
 /*! get size
 */
-static inline int mrbc_hash_size(const mrbc_value *hash) {
+static int mrbc_hash_size(const mrbc_value *hash) {
   return hash->hash->n_stored / 2;
 }
 
@@ -89,7 +89,7 @@ static inline int mrbc_hash_size(const mrbc_value *hash) {
 //================================================================
 /*! clear vm_id
 */
-static inline void mrbc_hash_clear_vm_id(mrbc_value *hash) {
+static void mrbc_hash_clear_vm_id(mrbc_value *hash) {
   mrbc_array_clear_vm_id(hash);
 }
 #endif
@@ -97,7 +97,7 @@ static inline void mrbc_hash_clear_vm_id(mrbc_value *hash) {
 //================================================================
 /*! resize buffer
 */
-static inline int mrbc_hash_resize(mrbc_value *hash, int size)
+static int mrbc_hash_resize(mrbc_value *hash, int size)
 {
   return mrbc_array_resize(hash, size * 2);
 }
@@ -106,7 +106,7 @@ static inline int mrbc_hash_resize(mrbc_value *hash, int size)
 //================================================================
 /*! iterator constructor
 */
-static inline mrbc_hash_iterator mrbc_hash_iterator_new( const mrbc_value *v )
+static mrbc_hash_iterator mrbc_hash_iterator_new( const mrbc_value *v )
 {
   mrbc_hash_iterator ite;
   ite.target = v->hash;
@@ -119,7 +119,7 @@ static inline mrbc_hash_iterator mrbc_hash_iterator_new( const mrbc_value *v )
 //================================================================
 /*! iterator has_next?
 */
-static inline int mrbc_hash_i_has_next( mrbc_hash_iterator *ite )
+static int mrbc_hash_i_has_next( mrbc_hash_iterator *ite )
 {
   return ite->point < ite->p_end;
 }
@@ -127,7 +127,7 @@ static inline int mrbc_hash_i_has_next( mrbc_hash_iterator *ite )
 //================================================================
 /*! iterator getter
 */
-static inline mrbc_value *mrbc_hash_i_next( mrbc_hash_iterator *ite )
+static mrbc_value *mrbc_hash_i_next( mrbc_hash_iterator *ite )
 {
   mrbc_value *ret = ite->point;
   ite->point += 2;

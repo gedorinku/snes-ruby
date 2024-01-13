@@ -444,7 +444,7 @@ int mrbc_strcpy(char *dest, int destsize, const char *src);
 
   @param   v     Pointer to mrbc_value
 */
-static inline void mrbc_incref(mrbc_value *v)
+static void mrbc_incref(mrbc_value *v)
 {
   if( v->tt <= MRBC_TT_INC_DEC_THRESHOLD ) return;
 
@@ -459,7 +459,7 @@ static inline void mrbc_incref(mrbc_value *v)
 
   @param   v     Pointer to target mrbc_value
 */
-static inline void mrbc_decref(mrbc_value *v)
+static void mrbc_decref(mrbc_value *v)
 {
   if( v->tt <= MRBC_TT_INC_DEC_THRESHOLD ) return;
 
@@ -477,7 +477,7 @@ static inline void mrbc_decref(mrbc_value *v)
 
   @param   v     Pointer to target mrbc_value
 */
-static inline void mrbc_decref_empty(mrbc_value *v)
+static void mrbc_decref_empty(mrbc_value *v)
 {
   mrbc_decref(v);
   v->tt = MRBC_TT_EMPTY;

@@ -186,7 +186,7 @@ void mrbc_init_class(void);
   @param  obj	pointer to object
   @return	pointer to mrbc_class
 */
-static inline mrbc_class *find_class_by_object(const mrbc_value *obj)
+static mrbc_class *find_class_by_object(const mrbc_value *obj)
 {
   assert( mrbc_type(*obj) >= 0 );
   assert( mrbc_type(*obj) <= MRBC_TT_MAXVAL );

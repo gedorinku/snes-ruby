@@ -74,7 +74,7 @@ static int sym_index_pos;	// point to the last(free) sym_index array.
   @param  str		Target string.
   @return uint16_t	Hash value.
 */
-static inline uint16_t calc_hash(const char *str)
+static uint16_t calc_hash(const char *str)
 {
   uint16_t h = 0;
 

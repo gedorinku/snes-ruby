@@ -86,18 +86,18 @@ int mrbc_get_vm_id(void *ptr);
 #error "Can't use MRBC_ALLOC_LIBC with MRBC_ALLOC_VMID"
 #endif
 
-static inline void mrbc_init_alloc(void *ptr, unsigned int size) {}
-static inline void mrbc_cleanup_alloc(void) {}
-static inline void *mrbc_raw_alloc(unsigned int size) {
+static void mrbc_init_alloc(void *ptr, unsigned int size) {}
+static void mrbc_cleanup_alloc(void) {}
+static void *mrbc_raw_alloc(unsigned int size) {
   return malloc(size);
 }
-static inline void *mrbc_raw_alloc_no_free(unsigned int size) {
+static void *mrbc_raw_alloc_no_free(unsigned int size) {
   return malloc(size);
 }
-static inline void mrbc_raw_free(void *ptr) {
+static void mrbc_raw_free(void *ptr) {
   free(ptr);
 }
-static inline void *mrbc_raw_realloc(void *ptr, unsigned int size) {
+static void *mrbc_raw_realloc(void *ptr, unsigned int size) {
   return realloc(ptr, size);
 }
 /*
@@ -109,20 +109,20 @@ static inline void *mrbc_raw_realloc(void *ptr, unsigned int size) {
  *   return malloc_usable_size(ptr);
  * }
 */
-static inline void mrbc_free(const struct VM *vm, void *ptr) {
+static void mrbc_free(const struct VM *vm, void *ptr) {
   free(ptr);
 }
-static inline void * mrbc_realloc(const struct VM *vm, void *ptr, unsigned int size) {
+static void * mrbc_realloc(const struct VM *vm, void *ptr, unsigned int size) {
   return realloc(ptr, size);
 }
-static inline void *mrbc_alloc(const struct VM *vm, unsigned int size) {
+static void *mrbc_alloc(const struct VM *vm, unsigned int size) {
   return malloc(size);
 }
-static inline void mrbc_free_all(const struct VM *vm) {
+static void mrbc_free_all(const struct VM *vm) {
 }
-static inline void mrbc_set_vm_id(void *ptr, int vm_id) {
+static void mrbc_set_vm_id(void *ptr, int vm_id) {
 }
-static inline int mrbc_get_vm_id(void *ptr) {
+static int mrbc_get_vm_id(void *ptr) {
   return 0;
 }
 #endif	// MRBC_ALLOC_LIBC

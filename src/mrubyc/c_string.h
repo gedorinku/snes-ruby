@@ -75,7 +75,7 @@ int mrbc_string_chomp(mrbc_value *src);
 //================================================================
 /*! compare
 */
-static inline int mrbc_string_compare(const mrbc_value *v1, const mrbc_value *v2)
+static int mrbc_string_compare(const mrbc_value *v1, const mrbc_value *v2)
 {
   int len = (v1->string->size < v2->string->size) ?
     v1->string->size : v2->string->size;
@@ -89,7 +89,7 @@ static inline int mrbc_string_compare(const mrbc_value *v1, const mrbc_value *v2
 //================================================================
 /*! get size
 */
-static inline int mrbc_string_size(const mrbc_value *str)
+static int mrbc_string_size(const mrbc_value *str)
 {
   return str->string->size;
 }
@@ -97,7 +97,7 @@ static inline int mrbc_string_size(const mrbc_value *str)
 //================================================================
 /*! get c-language string (char *)
 */
-static inline char * mrbc_string_cstr(const mrbc_value *v)
+static char * mrbc_string_cstr(const mrbc_value *v)
 {
   return (char*)v->string->data;
 }

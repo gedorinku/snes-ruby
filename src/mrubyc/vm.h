@@ -207,7 +207,7 @@ int mrbc_vm_run(struct VM *vm);
   @param  s	Pointer to memory.
   @return	16bit unsigned int value.
 */
-static inline uint16_t bin_to_uint16( const void *s )
+static uint16_t bin_to_uint16( const void *s )
 {
 #if defined(MRBC_LITTLE_ENDIAN) && !defined(MRBC_REQUIRE_32BIT_ALIGNMENT)
   // Little endian, no alignment.
@@ -239,7 +239,7 @@ static inline uint16_t bin_to_uint16( const void *s )
   @param  s	Pointer to memory.
   @return	32bit unsigned int value.
 */
-static inline uint32_t bin_to_uint32( const void *s )
+static uint32_t bin_to_uint32( const void *s )
 {
 #if defined(MRBC_LITTLE_ENDIAN) && !defined(MRBC_REQUIRE_32BIT_ALIGNMENT)
   // Little endian, no alignment.
@@ -274,7 +274,7 @@ static inline uint32_t bin_to_uint32( const void *s )
   @param  s	Pointer to memory.
   @return	64bit int value.
 */
-static inline int64_t bin_to_int64( const void *s )
+static int64_t bin_to_int64( const void *s )
 {
 #if defined(MRBC_LITTLE_ENDIAN) && !defined(MRBC_REQUIRE_64BIT_ALIGNMENT)
   // Little endian, no alignment.
@@ -325,7 +325,7 @@ static inline int64_t bin_to_int64( const void *s )
   @param  s	Pointer to memory.
   @return	double value.
 */
-static inline double bin_to_double64( const void *s )
+static double bin_to_double64( const void *s )
 {
 #if defined(MRBC_LITTLE_ENDIAN) && !defined(MRBC_REQUIRE_64BIT_ALIGNMENT)
   // Little endian, no alignment.
@@ -374,7 +374,7 @@ static inline double bin_to_double64( const void *s )
   @param  v	Source value.
   @param  d	Pointer to memory.
 */
-static inline void uint32_to_bin( uint32_t v, void *d )
+static void uint32_to_bin( uint32_t v, void *d )
 {
   uint8_t *p = (uint8_t *)d + 3;
   *p-- = 0xff & v;
@@ -393,7 +393,7 @@ static inline void uint32_to_bin( uint32_t v, void *d )
   @param  v	Source value.
   @param  d	Pointer to memory.
 */
-static inline void uint16_to_bin( uint16_t v, void *d )
+static void uint16_to_bin( uint16_t v, void *d )
 {
   uint8_t *p = (uint8_t *)d;
   *p++ = (v >> 8);

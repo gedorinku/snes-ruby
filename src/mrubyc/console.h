@@ -99,7 +99,7 @@ int mrbc_printf_pointer(mrbc_printf_t *pf, void *ptr);
 
   @param str	str
 */
-static inline void mrbc_print(const char *str)
+static void mrbc_print(const char *str)
 {
   mrbc_nprint( str, strlen(str) );
 }
@@ -113,7 +113,7 @@ static inline void mrbc_print(const char *str)
   @param  size	buffer size.
   @param  fstr	format string.
 */
-static inline void mrbc_printf_init( mrbc_printf_t *pf, char *buf, int size,
+static void mrbc_printf_init( mrbc_printf_t *pf, char *buf, int size,
 				     const char *fstr )
 {
   pf->p = pf->buf = buf;
@@ -128,7 +128,7 @@ static inline void mrbc_printf_init( mrbc_printf_t *pf, char *buf, int size,
 
   @param  pf	pointer to mrbc_printf
 */
-static inline void mrbc_printf_clear( mrbc_printf_t *pf )
+static void mrbc_printf_clear( mrbc_printf_t *pf )
 {
   pf->p = pf->buf;
 }
@@ -139,7 +139,7 @@ static inline void mrbc_printf_clear( mrbc_printf_t *pf )
 
   @param  pf	pointer to mrbc_printf
 */
-static inline void mrbc_printf_end( mrbc_printf_t *pf )
+static void mrbc_printf_end( mrbc_printf_t *pf )
 {
   *pf->p = '\0';
 }
@@ -151,7 +151,7 @@ static inline void mrbc_printf_end( mrbc_printf_t *pf )
   @param  pf	pointer to mrbc_printf
   @return	length
 */
-static inline int mrbc_printf_len( mrbc_printf_t *pf )
+static int mrbc_printf_len( mrbc_printf_t *pf )
 {
   return pf->p - pf->buf;
 }
@@ -167,7 +167,7 @@ static inline int mrbc_printf_len( mrbc_printf_t *pf )
   @retval -1	buffer full.
   @note		not terminate ('\0') buffer tail.
 */
-static inline int mrbc_printf_str( mrbc_printf_t *pf, const char *str, int pad )
+static int mrbc_printf_str( mrbc_printf_t *pf, const char *str, int pad )
 {
   return mrbc_printf_bstr( pf, str, (str ? strlen(str) : 0), pad );
 }
