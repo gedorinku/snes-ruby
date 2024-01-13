@@ -44,7 +44,7 @@ void mrbc_symbol_statistics(int *total_used);
 */
 static const char * mrbc_symbol_cstr(const mrbc_value *v)
 {
-  return mrbc_symid_to_str(v->i);
+  return mrbc_symid_to_str(v->uni.i);
 }
 
 

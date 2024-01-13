@@ -77,13 +77,13 @@ int mrbc_string_chomp(mrbc_value *src);
 */
 static int mrbc_string_compare(const mrbc_value *v1, const mrbc_value *v2)
 {
-  int len = (v1->string->size < v2->string->size) ?
-    v1->string->size : v2->string->size;
+  int len = (v1->uni.size < v2->uni.string->size) ?
+    v1->uni.string->size : v2->uni.string->size;
 
-  int res = memcmp(v1->string->data, v2->string->data, len);
+  int res = memcmp(v1->uni.string->data, v2->uni.string->data, len);
   if( res != 0 ) return res;
 
-  return v1->string->size - v2->string->size;
+  return v1->uni.string->size - v2->uni.string->size;
 }
 
 //================================================================
@@ -91,7 +91,7 @@ static int mrbc_string_compare(const mrbc_value *v1, const mrbc_value *v2)
 */
 static int mrbc_string_size(const mrbc_value *str)
 {
-  return str->string->size;
+  return str->uni.string->size;
 }
 
 //================================================================
@@ -99,7 +99,7 @@ static int mrbc_string_size(const mrbc_value *str)
 */
 static char * mrbc_string_cstr(const mrbc_value *v)
 {
-  return (char*)v->string->data;
+  return (char*)v->uni.string->data;
 }
 
 

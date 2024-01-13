@@ -20,6 +20,8 @@
 #include <assert.h>
 //@endcond
 
+#include "int8.h"
+
 /***** Local headers ********************************************************/
 #include "alloc.h"
 #include "value.h"

@@ -21,6 +21,8 @@
 #include <stdint.h>
 //@endcond
 
+#include "int8.h"
+
 /***** Local headers ********************************************************/
 #include "value.h"
 
@@ -55,7 +57,7 @@ typedef struct RKeyValueHandle {
   union {
     mrbc_kv *data;	//!< pointer to allocated memory.
     struct VM *vm;	//!< pointer to VM (if data_size == 0)
-  };
+  } uni;
 
 } mrbc_kv_handle;
 
@@ -124,7 +126,7 @@ static int mrbc_kv_i_has_next( const mrbc_kv_iterator *ite )
 */
 static mrbc_kv *mrbc_kv_i_next( mrbc_kv_iterator *ite )
 {
-  return &ite->target->data[ ite->i++ ];
+  return &ite->target->uni.data[ ite->i++ ];
 }
 
 
