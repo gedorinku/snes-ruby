@@ -1,24 +1,37 @@
+ifeq ($(strip $(WDC_INCLUDE_DIR)),)
+$(error "WDC_INCLUDE_DIR environment variable is not defined correctly")
+endif
+
 CC	:= WDC816CC.exe
 AS	:= WDC816AS.exe
 LD	:= WDCLN.exe
+PP 	:= gcc
+C99CONV := c99conv.exe
 
 target	:= $(shell basename $(CURDIR))
 output	:= $(target).sfc
 build	:= build
 listing	:= listing
 # sources	:= src
-sources	:= src src/mrubyc
+sources	:= src
 incdirs	:= $(sources) $(build)
 
-cfiles	:= $(foreach dir,$(sources),$(notdir $(wildcard $(dir)/*.c)))
-sfiles	:= $(foreach dir,$(sources),$(notdir $(wildcard $(dir)/*.asm)))
+cfiles = $(wildcard $(sources)/*.c)
+cfiles += $(wildcard $(sources)/*/*.c)
+cfiles += $(wildcard $(sources)/*/*/*.c)
+
+sfiles  = $(wildcard $(sources)/*.asm)
+sfiles += $(wildcard $(sources)/*/*.asm)
+sfiles += $(wildcard $(sources)/*/*/*.asm)
+
 ofiles	:= $(cfiles:%.c=build/%.o) $(sfiles:%.asm=build/%.o)
-listfiles:= $(cfiles:%.c=listing/%.asm)
+listfiles:= $(cfiles:%.c=listing/%.asm) $(cfiles:%.c=listing/%.i)
 
 LDFLAGS	:= -B -E -T -P00 -F hirom.cfg
 libs	:= -LCL
 
 includes:= $(foreach dir,$(incdirs),-I$(dir))
+DEFINES := -DSIZEOF_INT=2 -DSIZEOF_LONG=4 -DMRBC_USE_FLOAT=0
 
 export VPATH	:= $(foreach dir,$(sources),$(CURDIR)/$(dir))
 #--------------------------------------------------
@@ -26,13 +39,13 @@ export VPATH	:= $(foreach dir,$(sources),$(CURDIR)/$(dir))
 
 all: release
 
-debug: CFLAGS	:= -ML -SI -SP -WL -WP -DDEBUG -DSIZEOF_INT=2 -DSIZEOF_LONG=4 -DMRBC_USE_FLOAT=0
-debug: C2SFLAGS	:= -ML -AT -SI -SP -WL -WP -DDEBUG -DSIZEOF_INT=2 -DSIZEOF_LONG=4 -DMRBC_USE_FLOAT=0
+debug: CFLAGS	:= -ML -SI -SP -WL -WP -DDEBUG $(DEFINES)
+debug: C2SFLAGS	:= -ML -AT -SI -SP -WL -WP -DDEBUG $(DEFINES)
 debug: ASFLAGS	:= -S -DDEBUG
 debug: $(listing) $(listfiles) $(output)
 
-release: CFLAGS		:= -ML -SOP -WL -WP -DSIZEOF_INT=2 -DSIZEOF_LONG=4 -DMRBC_USE_FLOAT=0
-release: C2SFLAGS	:= -ML -AT -SOP -WL -WP -DSIZEOF_INT=2 -DSIZEOF_LONG=4 -DMRBC_USE_FLOAT=0
+release: CFLAGS		:= -ML -SOP -WL -WP $(DEFINES)
+release: C2SFLAGS	:= -ML -AT -SOP -WL -WP $(DEFINES)
 release: ASFLAGS	:= -S
 release: $(listing) $(listfiles) $(output)
 
@@ -57,8 +70,18 @@ clean:
 build/%.o : %.asm
 	$(AS) $(includes) $(ASFLAGS) -O $@ $(subst /mnt/c,c:\,$<)
 
-listing/%.asm : %.c
+listing/%.asm : listing/%.conv.i
 	$(CC) $(includes) $(C2SFLAGS) -O $@ $(subst /mnt/c,c:\,$<)
+
+
+listing/%.conv.i : listing/%.i
+	$(C99CONV) $< $@ 2>&1 | tee $@.log
+	! cat $@.log | grep -q -v ": error: "
+
+listing/%.i : %.c
+	mkdir -p $(dir $@)
+	$(PP) -I$(WDC_INCLUDE_DIR) $(includes) $(DEFINES) -E -o $@ $(subst /mnt/c,c:\,$<)
+	sed -i -e 's/^# \([0-9]* \)/\/\/ \1/g' $@
 
 %.sfc:
 	$(LD) $(LDFLAGS) $(ofiles) -O $@ $(libs)
