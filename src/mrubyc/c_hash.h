@@ -82,7 +82,7 @@ mrbc_value mrbc_hash_dup(struct VM *vm, mrbc_value *src);
 /*! get size
 */
 static int mrbc_hash_size(const mrbc_value *hash) {
-  return hash->hash->n_stored / 2;
+  return hash->uni.hash->n_stored / 2;
 }
 
 #if defined(MRBC_ALLOC_VMID)
@@ -109,9 +109,9 @@ static int mrbc_hash_resize(mrbc_value *hash, int size)
 static mrbc_hash_iterator mrbc_hash_iterator_new( const mrbc_value *v )
 {
   mrbc_hash_iterator ite;
-  ite.target = v->hash;
-  ite.point = v->hash->data;
-  ite.p_end = ite.point + v->hash->n_stored;
+  ite.target = v->uni.hash;
+  ite.point = v->uni.hash->data;
+  ite.p_end = ite.point + v->uni.hash->n_stored;
 
   return ite;
 }

@@ -207,28 +207,30 @@ static void c_numeric_clamp(struct VM *vm, mrbc_value v[], int argc)
     mrbc_raise(vm, MRBC_CLASS(ArgumentError), "wrong number of arguments (expected 2)");
     return;
   }
-  mrbc_value min = v[1];
-  mrbc_value max = v[2];
-  if (
-    (mrbc_type(min) != MRBC_TT_INTEGER && mrbc_type(min) != MRBC_TT_FLOAT) ||
-    (mrbc_type(max) != MRBC_TT_INTEGER && mrbc_type(max) != MRBC_TT_FLOAT)
-  ){
-    mrbc_raise(vm, MRBC_CLASS(ArgumentError), "comparison failed");
-    return;
+  {
+    mrbc_value min = v[1];
+    mrbc_value max = v[2];
+    if (
+      (mrbc_type(min) != MRBC_TT_INTEGER && mrbc_type(min) != MRBC_TT_FLOAT) ||
+      (mrbc_type(max) != MRBC_TT_INTEGER && mrbc_type(max) != MRBC_TT_FLOAT)
+    ){
+      mrbc_raise(vm, MRBC_CLASS(ArgumentError), "comparison failed");
+      return;
+    }
+    if (mrbc_compare(&max, &min) < 0) {
+      mrbc_raise(vm, MRBC_CLASS(ArgumentError), "min argument must be smaller than max argument");
+      return;
+    }
+    if (mrbc_compare(&v[0], &min) < 0) {
+      SET_RETURN(min);
+      return;
+    }
+    if (mrbc_compare(&max, &v[0]) < 0) {
+      SET_RETURN(max);
+      return;
+    }
+    SET_RETURN(v[0]); /* return self */
   }
-  if (mrbc_compare(&max, &min) < 0) {
-    mrbc_raise(vm, MRBC_CLASS(ArgumentError), "min argument must be smaller than max argument");
-    return;
-  }
-  if (mrbc_compare(&v[0], &min) < 0) {
-    SET_RETURN(min);
-    return;
-  }
-  if (mrbc_compare(&max, &v[0]) < 0) {
-    SET_RETURN(max);
-    return;
-  }
-  SET_RETURN(v[0]); /* return self */
 }
 
 
@@ -250,10 +252,13 @@ static void c_integer_to_f(struct VM *vm, mrbc_value v[], int argc)
 */
 static void c_integer_chr(struct VM *vm, mrbc_value v[], int argc)
 {
-  char buf[2] = { mrbc_integer(v[0]) };
+  char buf[2] = { 0 };
+  buf[0] = mrbc_integer(v[0]);
 
-  mrbc_value value = mrbc_string_new(vm, buf, 1);
-  SET_RETURN(value);
+  {
+    mrbc_value value = mrbc_string_new(vm, buf, 1);
+    SET_RETURN(value);
+  }
 }
 
 
@@ -262,12 +267,16 @@ static void c_integer_chr(struct VM *vm, mrbc_value v[], int argc)
 */
 static void c_integer_inspect(struct VM *vm, mrbc_value v[], int argc)
 {
+  int base;
+  mrbc_printf_t pf;
+  char buf[16];
+  mrbc_value value;
   if( v[0].tt == MRBC_TT_CLASS ) {
     v[0] = mrbc_string_new_cstr(vm, mrbc_symid_to_str( v[0].cls->sym_id ));
     return;
   }
 
-  int base = 10;
+  base = 10;
   if( argc ) {
     base = mrbc_integer(v[1]);
     if( base < 2 || base > 36 ) {
@@ -276,14 +285,13 @@ static void c_integer_inspect(struct VM *vm, mrbc_value v[], int argc)
     }
   }
 
-  mrbc_printf_t pf;
-  char buf[16];
+ 
   mrbc_printf_init( &pf, buf, sizeof(buf), NULL );
   pf.fmt.type = 'd';
   mrbc_printf_int( &pf, v->i, base );
   mrbc_printf_end( &pf );
 
-  mrbc_value value = mrbc_string_new_cstr(vm, buf);
+  value = mrbc_string_new_cstr(vm, buf);
   SET_RETURN(value);
 }
 #endif

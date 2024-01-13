@@ -87,13 +87,13 @@ static const mrbc_func_t method_functions_String[] = {
 };
 
 struct RBuiltinClass mrbc_class_String = {
-  .sym_id = MRBC_SYM(String),
-  .num_builtin_method = sizeof(method_symbols_String) / sizeof(mrbc_sym),
-  .super = MRBC_CLASS(Object),
-  .method_link = 0,
+  MRBC_SYM(String),
+  sizeof(method_symbols_String) / sizeof(mrbc_sym),
+  MRBC_CLASS(Object),
+  0,
 #if defined(MRBC_DEBUG)
-  .name = "String",
+  "String",
 #endif
-  .method_symbols = method_symbols_String,
-  .method_functions = method_functions_String,
+  method_symbols_String,
+  method_functions_String,
 };

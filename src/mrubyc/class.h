@@ -117,11 +117,11 @@ typedef struct RMethod {
   union {
     struct IREP *irep;	//!< to IREP for ruby proc.
     mrbc_func_t func;	//!< to C function.
-  };
+  } uni_func;
   union {
     struct RMethod *next;	//!< link to next method.
     struct RClass *cls;		//!< return value for mrbc_find_method.
-  };
+  } uni_next;
 } mrbc_method;
 
 

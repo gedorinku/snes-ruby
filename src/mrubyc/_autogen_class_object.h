@@ -97,15 +97,15 @@ static const mrbc_func_t method_functions_Object[] = {
 };
 
 struct RBuiltinClass mrbc_class_Object = {
-  .sym_id = MRBC_SYM(Object),
-  .num_builtin_method = sizeof(method_symbols_Object) / sizeof(mrbc_sym),
-  .super = 0,
-  .method_link = 0,
+  MRBC_SYM(Object),
+  sizeof(method_symbols_Object) / sizeof(mrbc_sym),
+  0,
+  0,
 #if defined(MRBC_DEBUG)
-  .name = "Object",
+  "Object",
 #endif
-  .method_symbols = method_symbols_Object,
-  .method_functions = method_functions_Object,
+  method_symbols_Object,
+  method_functions_Object,
 };
 
 
@@ -121,15 +121,15 @@ static const mrbc_func_t method_functions_Proc[] = {
 };
 
 struct RBuiltinClass mrbc_class_Proc = {
-  .sym_id = MRBC_SYM(Proc),
-  .num_builtin_method = sizeof(method_symbols_Proc) / sizeof(mrbc_sym),
-  .super = MRBC_CLASS(Object),
-  .method_link = 0,
+  MRBC_SYM(Proc),
+  sizeof(method_symbols_Proc) / sizeof(mrbc_sym),
+  MRBC_CLASS(Object),
+  0,
 #if defined(MRBC_DEBUG)
-  .name = "Proc",
+  "Proc",
 #endif
-  .method_symbols = method_symbols_Proc,
-  .method_functions = method_functions_Proc,
+  method_symbols_Proc,
+  method_functions_Proc,
 };
 
 
@@ -165,15 +165,15 @@ static const mrbc_func_t method_functions_NilClass[] = {
 };
 
 struct RBuiltinClass mrbc_class_NilClass = {
-  .sym_id = MRBC_SYM(NilClass),
-  .num_builtin_method = sizeof(method_symbols_NilClass) / sizeof(mrbc_sym),
-  .super = MRBC_CLASS(Object),
-  .method_link = 0,
+  MRBC_SYM(NilClass),
+  sizeof(method_symbols_NilClass) / sizeof(mrbc_sym),
+  MRBC_CLASS(Object),
+  0,
 #if defined(MRBC_DEBUG)
-  .name = "NilClass",
+  "NilClass",
 #endif
-  .method_symbols = method_symbols_NilClass,
-  .method_functions = method_functions_NilClass,
+  method_symbols_NilClass,
+  method_functions_NilClass,
 };
 
 
@@ -197,15 +197,15 @@ static const mrbc_func_t method_functions_TrueClass[] = {
 };
 
 struct RBuiltinClass mrbc_class_TrueClass = {
-  .sym_id = MRBC_SYM(TrueClass),
-  .num_builtin_method = sizeof(method_symbols_TrueClass) / sizeof(mrbc_sym),
-  .super = MRBC_CLASS(Object),
-  .method_link = 0,
+  MRBC_SYM(TrueClass),
+  sizeof(method_symbols_TrueClass) / sizeof(mrbc_sym),
+  MRBC_CLASS(Object),
+  0,
 #if defined(MRBC_DEBUG)
-  .name = "TrueClass",
+  "TrueClass",
 #endif
-  .method_symbols = method_symbols_TrueClass,
-  .method_functions = method_functions_TrueClass,
+  method_symbols_TrueClass,
+  method_functions_TrueClass,
 };
 
 
@@ -229,13 +229,13 @@ static const mrbc_func_t method_functions_FalseClass[] = {
 };
 
 struct RBuiltinClass mrbc_class_FalseClass = {
-  .sym_id = MRBC_SYM(FalseClass),
-  .num_builtin_method = sizeof(method_symbols_FalseClass) / sizeof(mrbc_sym),
-  .super = MRBC_CLASS(Object),
-  .method_link = 0,
+  MRBC_SYM(FalseClass),
+  sizeof(method_symbols_FalseClass) / sizeof(mrbc_sym),
+  MRBC_CLASS(Object),
+  0,
 #if defined(MRBC_DEBUG)
-  .name = "FalseClass",
+  "FalseClass",
 #endif
-  .method_symbols = method_symbols_FalseClass,
-  .method_functions = method_functions_FalseClass,
+  method_symbols_FalseClass,
+  method_functions_FalseClass,
 };

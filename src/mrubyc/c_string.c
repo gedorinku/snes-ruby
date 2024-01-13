@@ -70,7 +70,7 @@ static int is_space( int ch )
 */
 mrbc_value mrbc_string_new(struct VM *vm, const void *src, int len)
 {
-  mrbc_value value = {.tt = MRBC_TT_STRING};
+  mrbc_value value = {MRBC_TT_STRING};
 
   /*
     Allocate handle and string buffer.
@@ -78,28 +78,30 @@ mrbc_value mrbc_string_new(struct VM *vm, const void *src, int len)
   mrbc_string *h = mrbc_alloc(vm, sizeof(mrbc_string));
   if( !h ) return value;		// ENOMEM
 
-  uint8_t *str = mrbc_alloc(vm, len+1);
-  if( !str ) {				// ENOMEM
-    mrbc_raw_free( h );
+  {
+    uint8_t *str = mrbc_alloc(vm, len+1);
+    if( !str ) {				// ENOMEM
+      mrbc_raw_free( h );
+      return value;
+    }
+
+    MRBC_INIT_OBJECT_HEADER( h, "ST" );
+    h->size = len;
+    h->data = str;
+
+    /*
+      Copy a source string.
+    */
+    if( src == NULL ) {
+      str[0] = '\0';
+    } else {
+      memcpy( str, src, len );
+      str[len] = '\0';
+    }
+
+    value.uni.string = h;
     return value;
   }
-
-  MRBC_INIT_OBJECT_HEADER( h, "ST" );
-  h->size = len;
-  h->data = str;
-
-  /*
-    Copy a source string.
-  */
-  if( src == NULL ) {
-    str[0] = '\0';
-  } else {
-    memcpy( str, src, len );
-    str[len] = '\0';
-  }
-
-  value.string = h;
-  return value;
 }
 
 
@@ -126,7 +128,7 @@ mrbc_value mrbc_string_new_cstr(struct VM *vm, const char *src)
 */
 mrbc_value mrbc_string_new_alloc(struct VM *vm, void *buf, int len)
 {
-  mrbc_value value = {.tt = MRBC_TT_STRING};
+  mrbc_value value = {MRBC_TT_STRING};
 
   /*
     Allocate handle
@@ -138,7 +140,7 @@ mrbc_value mrbc_string_new_alloc(struct VM *vm, void *buf, int len)
   h->size = len;
   h->data = buf;
 
-  value.string = h;
+  value.uni.string = h;
   return value;
 }
 
@@ -150,8 +152,8 @@ mrbc_value mrbc_string_new_alloc(struct VM *vm, void *buf, int len)
 */
 void mrbc_string_delete(mrbc_value *str)
 {
-  mrbc_raw_free(str->string->data);
-  mrbc_raw_free(str->string);
+  mrbc_raw_free(str->uni.string->data);
+  mrbc_raw_free(str->uni.string);
 }
 
 
@@ -161,9 +163,9 @@ void mrbc_string_delete(mrbc_value *str)
 */
 void mrbc_string_clear(mrbc_value *str)
 {
-  mrbc_raw_realloc(str->string->data, 1);
-  str->string->data[0] = '\0';
-  str->string->size = 0;
+  mrbc_raw_realloc(str->uni.string->data, 1);
+  str->uni.string->data[0] = '\0';
+  str->uni.string->size = 0;
 }
 
 
@@ -173,8 +175,8 @@ void mrbc_string_clear(mrbc_value *str)
 */
 void mrbc_string_clear_vm_id(mrbc_value *str)
 {
-  mrbc_set_vm_id( str->string, 0 );
-  mrbc_set_vm_id( str->string->data, 0 );
+  mrbc_set_vm_id( str->uni.string, 0 );
+  mrbc_set_vm_id( str->uni.string->data, 0 );
 }
 #endif
 
@@ -188,12 +190,12 @@ void mrbc_string_clear_vm_id(mrbc_value *str)
 */
 mrbc_value mrbc_string_dup(struct VM *vm, mrbc_value *s1)
 {
-  mrbc_string *h1 = s1->string;
+  mrbc_string *h1 = s1->uni.string;
 
   mrbc_value value = mrbc_string_new(vm, NULL, h1->size);
-  if( value.string == NULL ) return value;		// ENOMEM
+  if( value.uni.string == NULL ) return value;		// ENOMEM
 
-  memcpy( value.string->data, h1->data, h1->size + 1 );
+  memcpy( value.uni.string->data, h1->data, h1->size + 1 );
 
   return value;
 }
@@ -209,14 +211,14 @@ mrbc_value mrbc_string_dup(struct VM *vm, mrbc_value *s1)
 */
 mrbc_value mrbc_string_add(struct VM *vm, const mrbc_value *s1, const mrbc_value *s2)
 {
-  mrbc_string *h1 = s1->string;
-  mrbc_string *h2 = s2->string;
+  mrbc_string *h1 = s1->uni.string;
+  mrbc_string *h2 = s2->uni.string;
 
   mrbc_value value = mrbc_string_new(vm, NULL, h1->size + h2->size);
-  if( value.string == NULL ) return value;		// ENOMEM
+  if( value.uni.string == NULL ) return value;		// ENOMEM
 
-  memcpy( value.string->data,            h1->data, h1->size );
-  memcpy( value.string->data + h1->size, h2->data, h2->size + 1 );
+  memcpy( value.uni.string->data,            h1->data, h1->size );
+  memcpy( value.uni.string->data + h1->size, h2->data, h2->size + 1 );
 
   return value;
 }
@@ -231,21 +233,21 @@ mrbc_value mrbc_string_add(struct VM *vm, const mrbc_value *s1, const mrbc_value
 */
 int mrbc_string_append(mrbc_value *s1, const mrbc_value *s2)
 {
-  int len1 = s1->string->size;
-  int len2 = (mrbc_type(*s2) == MRBC_TT_STRING) ? s2->string->size : 1;
+  int len1 = s1->uni.string->size;
+  int len2 = (mrbc_type(*s2) == MRBC_TT_STRING) ? s2->uni.string->size : 1;
 
-  uint8_t *str = mrbc_raw_realloc(s1->string->data, len1+len2+1);
+  uint8_t *str = mrbc_raw_realloc(s1->uni.string->data, len1+len2+1);
   if( !str ) return E_NOMEMORY_ERROR;
 
   if( mrbc_type(*s2) == MRBC_TT_STRING ) {
-    memcpy(str + len1, s2->string->data, len2 + 1);
+    memcpy(str + len1, s2->uni.string->data, len2 + 1);
   } else if( mrbc_type(*s2) == MRBC_TT_INTEGER ) {
     str[len1] = s2->i;
     str[len1+1] = '\0';
   }
 
-  s1->string->size = len1 + len2;
-  s1->string->data = str;
+  s1->uni.string->size = len1 + len2;
+  s1->uni.string->data = str;
 
   return 0;
 }
@@ -260,16 +262,16 @@ int mrbc_string_append(mrbc_value *s1, const mrbc_value *s2)
 */
 int mrbc_string_append_cstr(mrbc_value *s1, const char *s2)
 {
-  int len1 = s1->string->size;
+  int len1 = s1->uni.string->size;
   int len2 = strlen(s2);
 
-  uint8_t *str = mrbc_raw_realloc(s1->string->data, len1+len2+1);
+  uint8_t *str = mrbc_raw_realloc(s1->uni.string->data, len1+len2+1);
   if( !str ) return E_NOMEMORY_ERROR;
 
   memcpy(str + len1, s2, len2 + 1);
 
-  s1->string->size = len1 + len2;
-  s1->string->data = str;
+  s1->uni.string->size = len1 + len2;
+  s1->uni.string->data = str;
 
   return 0;
 }
@@ -329,14 +331,17 @@ int mrbc_string_strip(mrbc_value *src, int mode)
     }
   }
 
-  int new_size = p2 - p1 + 1;
-  if( mrbc_string_size(src) == new_size ) return 0;
+  {
+    int new_size = p2 - p1 + 1;
+    char *buf;
+    if( mrbc_string_size(src) == new_size ) return 0;
 
-  char *buf = mrbc_string_cstr(src);
-  if( p1 != buf ) memmove( buf, p1, new_size );
-  buf[new_size] = '\0';
-  mrbc_raw_realloc(buf, new_size+1);	// shrink suitable size.
-  src->string->size = new_size;
+    buf = mrbc_string_cstr(src);
+    if( p1 != buf ) memmove( buf, p1, new_size );
+    buf[new_size] = '\0';
+    mrbc_raw_realloc(buf, new_size+1);	// shrink suitable size.
+    src->uni.string->size = new_size;
+  }
 
   return 1;
 }
@@ -360,12 +365,15 @@ int mrbc_string_chomp(mrbc_value *src)
     p2--;
   }
 
-  int new_size = p2 - p1 + 1;
-  if( mrbc_string_size(src) == new_size ) return 0;
+  {
+    int new_size = p2 - p1 + 1;
+    char *buf;
+    if( mrbc_string_size(src) == new_size ) return 0;
 
-  char *buf = mrbc_string_cstr(src);
-  buf[new_size] = '\0';
-  src->string->size = new_size;
+    buf = mrbc_string_cstr(src);
+    buf[new_size] = '\0';
+    src->uni.string->size = new_size;
+  }
 
   return 1;
 }
@@ -385,13 +393,15 @@ static void c_string_new(struct VM *vm, mrbc_value v[], int argc)
     return;
   }
 
+  {
   mrbc_value value;
-  if (argc == 0) {
-    value = mrbc_string_new(vm, NULL, 0);
-  } else {
-    value = mrbc_string_dup(vm, &v[1]);
+    if (argc == 0) {
+      value = mrbc_string_new(vm, NULL, 0);
+    } else {
+      value = mrbc_string_dup(vm, &v[1]);
+    }
+    SET_RETURN(value);
   }
-  SET_RETURN(value);
 }
 
 
@@ -405,8 +415,10 @@ static void c_string_add(struct VM *vm, mrbc_value v[], int argc)
     return;
   }
 
-  mrbc_value value = mrbc_string_add(vm, &v[0], &v[1]);
-  SET_RETURN(value);
+  {
+    mrbc_value value = mrbc_string_add(vm, &v[0], &v[1]);
+    SET_RETURN(value);
+  }
 }
 
 
@@ -426,19 +438,23 @@ static void c_string_mul(struct VM *vm, mrbc_value v[], int argc)
     return;
   }
 
-  mrbc_value value = mrbc_string_new(vm, NULL,
-			mrbc_string_size(&v[0]) * mrbc_integer(v[1]));
-  if( value.string == NULL ) return;		// ENOMEM
+  {
+    mrbc_value value = mrbc_string_new(vm, NULL,
+        mrbc_string_size(&v[0]) * mrbc_integer(v[1]));
+    if( value.uni.string == NULL ) return;		// ENOMEM
 
-  uint8_t *p = value.string->data;
-  int i;
-  for( i = 0; i < v[1].i; i++ ) {
-    memcpy( p, mrbc_string_cstr(&v[0]), mrbc_string_size(&v[0]) );
-    p += mrbc_string_size(&v[0]);
+    {
+      uint8_t *p = value.uni.string->data;
+      int i;
+      for( i = 0; i < v[1].i; i++ ) {
+        memcpy( p, mrbc_string_cstr(&v[0]), mrbc_string_size(&v[0]) );
+        p += mrbc_string_size(&v[0]);
+      }
+      *p = 0;
+    }
+
+    SET_RETURN(value);
   }
-  *p = 0;
-
-  SET_RETURN(value);
 }
 
 
@@ -469,9 +485,11 @@ static void c_string_to_i(struct VM *vm, mrbc_value v[], int argc)
     }
   }
 
-  mrbc_int_t i = mrbc_atoi( mrbc_string_cstr(v), base );
+  {
+    mrbc_int_t i = mrbc_atoi( mrbc_string_cstr(v), base );
 
-  SET_INT_RETURN( i );
+    SET_INT_RETURN( i );
+  }
 }
 
 
@@ -541,11 +559,13 @@ static void c_string_slice(struct VM *vm, mrbc_value v[], int argc)
   if( len < 0 ) goto RETURN_NIL;
   if( argc == 1 && len <= 0 ) goto RETURN_NIL;
 
-  mrbc_value ret = mrbc_string_new(vm, mrbc_string_cstr(v) + pos, len);
-  if( !ret.string ) goto RETURN_NIL;		// ENOMEM
+  {
+    mrbc_value ret = mrbc_string_new(vm, mrbc_string_cstr(v) + pos, len);
+    if( !ret.uni.string ) goto RETURN_NIL;		// ENOMEM
 
-  SET_RETURN(ret);
-  return;		// normal return
+    SET_RETURN(ret);
+    return;		// normal return
+  }
 
  RETURN_NIL:
   SET_NIL_RETURN();
@@ -588,31 +608,35 @@ static void c_string_insert(struct VM *vm, mrbc_value v[], int argc)
     return;
   }
 
-  int len1 = v->string->size;
-  int len2 = val->string->size;
-  if( nth < 0 ) nth = len1 + nth;		// adjust to positive number.
-  if( len > len1 - nth ) len = len1 - nth;
-  if( nth < 0 || nth > len1 || len < 0) {
-    mrbc_raisef( vm, MRBC_CLASS(IndexError), "index %d out of string", nth );
-    return;
+  {
+    int len1 = v->uni.string->size;
+    int len2 = val->uni.string->size;
+    int len3;
+    uint8_t *str;
+    if( nth < 0 ) nth = len1 + nth;		// adjust to positive number.
+    if( len > len1 - nth ) len = len1 - nth;
+    if( nth < 0 || nth > len1 || len < 0) {
+      mrbc_raisef( vm, MRBC_CLASS(IndexError), "index %d out of string", nth );
+      return;
+    }
+
+    len3 = len1 + len2 - len;			// final length.
+    str = v->uni.string->data;
+    if( len1 < len3 ) {
+      str = mrbc_realloc(vm, str, len3+1);	// expand
+      if( !str ) return;
+    }
+
+    memmove( str + nth + len2, str + nth + len, len1 - nth - len + 1 );
+    memcpy( str + nth, mrbc_string_cstr(val), len2 );
+
+    if( len1 > len3 ) {
+      str = mrbc_realloc(vm, str, len3+1);	// shrink
+    }
+
+    v->uni.string->size = len1 + len2 - len;
+    v->uni.string->data = str;
   }
-
-  int len3 = len1 + len2 - len;			// final length.
-  uint8_t *str = v->string->data;
-  if( len1 < len3 ) {
-    str = mrbc_realloc(vm, str, len3+1);	// expand
-    if( !str ) return;
-  }
-
-  memmove( str + nth + len2, str + nth + len, len1 - nth - len + 1 );
-  memcpy( str + nth, mrbc_string_cstr(val), len2 );
-
-  if( len1 > len3 ) {
-    str = mrbc_realloc(vm, str, len3+1);	// shrink
-  }
-
-  v->string->size = len1 + len2 - len;
-  v->string->data = str;
 }
 
 
@@ -793,18 +817,20 @@ static void c_string_slice_self(struct VM *vm, mrbc_value v[], int argc)
   if( len < 0 ) goto RETURN_NIL;
   if( argc == 1 && len <= 0 ) goto RETURN_NIL;
 
-  mrbc_value ret = mrbc_string_new(vm, mrbc_string_cstr(v) + pos, len);
-  if( !ret.string ) goto RETURN_NIL;		// ENOMEM
+  {
+    mrbc_value ret = mrbc_string_new(vm, mrbc_string_cstr(v) + pos, len);
+    if( !ret.uni.string ) goto RETURN_NIL;		// ENOMEM
 
-  if( len > 0 ) {
-    memmove( mrbc_string_cstr(v) + pos, mrbc_string_cstr(v) + pos + len,
-	     mrbc_string_size(v) - pos - len + 1 );
-    v->string->size = mrbc_string_size(v) - len;
-    mrbc_raw_realloc( mrbc_string_cstr(v), mrbc_string_size(v)+1 );
+    if( len > 0 ) {
+      memmove( mrbc_string_cstr(v) + pos, mrbc_string_cstr(v) + pos + len,
+        mrbc_string_size(v) - pos - len + 1 );
+      v->uni.string->size = mrbc_string_size(v) - len;
+      mrbc_raw_realloc( mrbc_string_cstr(v), mrbc_string_size(v)+1 );
+    }
+
+    SET_RETURN(ret);
+    return;		// normal return
   }
-
-  SET_RETURN(ret);
-  return;		// normal return
 
  RETURN_NIL:
   SET_NIL_RETURN();
@@ -816,11 +842,12 @@ static void c_string_slice_self(struct VM *vm, mrbc_value v[], int argc)
 */
 static void c_string_split(struct VM *vm, mrbc_value v[], int argc)
 {
-  mrbc_value ret = mrbc_array_new(vm, 0);
+  int limit;
+  mrbc_value ret = mrbc_array_new(vm, 0), sep;
   if( mrbc_string_size(&v[0]) == 0 ) goto DONE;
 
   // check limit parameter.
-  int limit = 0;
+  limit = 0;
   if( argc >= 2 ) {
     if( mrbc_type(v[2]) != MRBC_TT_INTEGER ) {
       mrbc_raise( vm, MRBC_CLASS(ArgumentError), 0 );
@@ -835,7 +862,7 @@ static void c_string_split(struct VM *vm, mrbc_value v[], int argc)
   }
 
   // check separator parameter.
-  mrbc_value sep = (argc == 0) ? mrbc_string_new_cstr(vm, " ") : v[1];
+  sep = (argc == 0) ? mrbc_string_new_cstr(vm, " ") : v[1];
   switch( mrbc_type(sep) ) {
   case MRBC_TT_NIL:
     sep = mrbc_string_new_cstr(vm, " ");
@@ -849,58 +876,62 @@ static void c_string_split(struct VM *vm, mrbc_value v[], int argc)
     return;
   }
 
-  int flag_strip = (mrbc_string_cstr(&sep)[0] == ' ') &&
-		   (mrbc_string_size(&sep) == 1);
-  int offset = 0;
-  int sep_len = mrbc_string_size(&sep);
-  if( sep_len == 0 ) sep_len++;
+  {
+    int flag_strip = (mrbc_string_cstr(&sep)[0] == ' ') &&
+        (mrbc_string_size(&sep) == 1);
+    int offset = 0;
+    int sep_len = mrbc_string_size(&sep);
+    if( sep_len == 0 ) sep_len++;
 
-  while( 1 ) {
-    int pos, len = 0;
+    while( 1 ) {
+      int pos, len = 0;
 
-    if( flag_strip ) {
-      for( ; offset < mrbc_string_size(&v[0]); offset++ ) {
-	if( !is_space( mrbc_string_cstr(&v[0])[offset] )) break;
+      if( flag_strip ) {
+        for( ; offset < mrbc_string_size(&v[0]); offset++ ) {
+    if( !is_space( mrbc_string_cstr(&v[0])[offset] )) break;
+        }
+        if( offset > mrbc_string_size(&v[0])) break;
       }
-      if( offset > mrbc_string_size(&v[0])) break;
-    }
 
-    // check limit
-    if( limit > 0 && mrbc_array_size(&ret)+1 >= limit ) {
-      pos = -1;
-      goto SPLIT_ITEM;
-    }
-
-    // split by space character.
-    if( flag_strip ) {
-      pos = offset;
-      for( ; pos < mrbc_string_size(&v[0]); pos++ ) {
-	if( is_space( mrbc_string_cstr(&v[0])[pos] )) break;
+      // check limit
+      if( limit > 0 && mrbc_array_size(&ret)+1 >= limit ) {
+        pos = -1;
+        goto SPLIT_ITEM;
       }
+
+      // split by space character.
+      if( flag_strip ) {
+        pos = offset;
+        for( ; pos < mrbc_string_size(&v[0]); pos++ ) {
+    if( is_space( mrbc_string_cstr(&v[0])[pos] )) break;
+        }
+        len = pos - offset;
+        goto SPLIT_ITEM;
+      }
+
+      // split by each character.
+      if( mrbc_string_size(&sep) == 0 ) {
+        pos = (offset < mrbc_string_size(&v[0])-1) ? offset : -1;
+        len = 1;
+        goto SPLIT_ITEM;
+      }
+
+      // split by specified character.
+      pos = mrbc_string_index( &v[0], &sep, offset );
       len = pos - offset;
-      goto SPLIT_ITEM;
+
+
+    SPLIT_ITEM:
+      if( pos < 0 ) len = mrbc_string_size(&v[0]) - offset;
+
+      {
+        mrbc_value v1 = mrbc_string_new(vm, mrbc_string_cstr(&v[0]) + offset, len);
+        mrbc_array_push( &ret, &v1 );
+      }
+
+      if( pos < 0 ) break;
+      offset = pos + sep_len;
     }
-
-    // split by each character.
-    if( mrbc_string_size(&sep) == 0 ) {
-      pos = (offset < mrbc_string_size(&v[0])-1) ? offset : -1;
-      len = 1;
-      goto SPLIT_ITEM;
-    }
-
-    // split by specified character.
-    pos = mrbc_string_index( &v[0], &sep, offset );
-    len = pos - offset;
-
-
-  SPLIT_ITEM:
-    if( pos < 0 ) len = mrbc_string_size(&v[0]) - offset;
-
-    mrbc_value v1 = mrbc_string_new(vm, mrbc_string_cstr(&v[0]) + offset, len);
-    mrbc_array_push( &ret, &v1 );
-
-    if( pos < 0 ) break;
-    offset = pos + sep_len;
   }
 
   // remove trailing empty item
@@ -909,11 +940,13 @@ static void c_string_split(struct VM *vm, mrbc_value v[], int argc)
       int idx = mrbc_array_size(&ret) - 1;
       if( idx < 0 ) break;
 
-      mrbc_value v1 = mrbc_array_get( &ret, idx );
-      if( mrbc_string_size(&v1) != 0 ) break;
+      {
+        mrbc_value v1 = mrbc_array_get( &ret, idx );
+        if( mrbc_string_size(&v1) != 0 ) break;
 
-      mrbc_array_remove(&ret, idx);
-      mrbc_string_delete( &v1 );
+        mrbc_array_remove(&ret, idx);
+        mrbc_string_delete( &v1 );
+      }
     }
   }
 
@@ -1024,7 +1057,7 @@ struct tr_pattern {
   uint8_t flag_reverse;
   int16_t n;
   struct tr_pattern *next;
-  char ch[];
+  char *ch;
 };
 
 static void tr_free_pattern( struct tr_pattern *pat )
@@ -1041,7 +1074,7 @@ static struct tr_pattern * tr_parse_pattern( struct VM *vm, const mrbc_value *v_
   const char *pattern = mrbc_string_cstr( v_pattern );
   int pattern_length = mrbc_string_size( v_pattern );
   int flag_reverse = 0;
-  struct tr_pattern *ret = NULL;
+  struct tr_pattern *ret = NULL, *pat1;
 
   int i = 0;
   if( flag_reverse_enable && pattern_length >= 2 && pattern[i] == '^' ) {
@@ -1049,7 +1082,6 @@ static struct tr_pattern * tr_parse_pattern( struct VM *vm, const mrbc_value *v_
     i++;
   }
 
-  struct tr_pattern *pat1;
   while( i < pattern_length ) {
     // is range pattern ?
     if( (i+2) < pattern_length && pattern[i+1] == '-' ) {
@@ -1072,14 +1104,16 @@ static struct tr_pattern * tr_parse_pattern( struct VM *vm, const mrbc_value *v_
 	i++;
       }
 
-      int len = i - start_pos;
-      pat1 = mrbc_alloc( vm, sizeof(struct tr_pattern) + len );
-      if( pat1 != NULL ) {
-	pat1->type = 1;
-	pat1->flag_reverse = flag_reverse;
-	pat1->n = len;
-	pat1->next = NULL;
-	memcpy( pat1->ch, &pattern[start_pos], len );
+      {
+        int len = i - start_pos;
+        pat1 = mrbc_alloc( vm, sizeof(struct tr_pattern) + len );
+        if( pat1 != NULL ) {
+          pat1->type = 1;
+          pat1->flag_reverse = flag_reverse;
+          pat1->n = len;
+          pat1->next = NULL;
+          memcpy( pat1->ch, &pattern[start_pos], len );
+        }
       }
     }
 
@@ -1141,42 +1175,45 @@ static int tr_get_character( const struct tr_pattern *pat, int n_th )
 
 static int tr_main( struct VM *vm, mrbc_value v[], int argc )
 {
+  struct tr_pattern *pat, *rep;
   if( !(argc == 2 && mrbc_type(v[1]) == MRBC_TT_STRING &&
 	             mrbc_type(v[2]) == MRBC_TT_STRING)) {
     mrbc_raise( vm, MRBC_CLASS(ArgumentError), 0 );
     return -1;
   }
 
-  struct tr_pattern *pat = tr_parse_pattern( vm, &v[1], 1 );
+  pat = tr_parse_pattern( vm, &v[1], 1 );
   if( pat == NULL ) return 0;
 
-  struct tr_pattern *rep = tr_parse_pattern( vm, &v[2], 0 );
+  rep = tr_parse_pattern( vm, &v[2], 0 );
 
-  int flag_changed = 0;
-  char *s = mrbc_string_cstr( &v[0] );
-  int len = mrbc_string_size( &v[0] );
-  int i;
-  for( i = 0; i < len; i++ ) {
-    int n = tr_find_character( pat, s[i] );
-    if( n < 0 ) continue;
+  {
+    int flag_changed = 0;
+    char *s = mrbc_string_cstr( &v[0] );
+    int len = mrbc_string_size( &v[0] );
+    int i;
+    for( i = 0; i < len; i++ ) {
+      int n = tr_find_character( pat, s[i] );
+      if( n < 0 ) continue;
 
-    flag_changed = 1;
-    if( rep == NULL ) {
-      memmove( s + i, s + i + 1, len - i );
-      len--;
-      i--;
-    } else {
-      s[i] = tr_get_character( rep, n );
+      flag_changed = 1;
+      if( rep == NULL ) {
+        memmove( s + i, s + i + 1, len - i );
+        len--;
+        i--;
+      } else {
+        s[i] = tr_get_character( rep, n );
+      }
     }
+
+    tr_free_pattern( pat );
+    tr_free_pattern( rep );
+
+    v[0].uni.string->size = len;
+    v[0].uni.string->data[len] = 0;
+
+    return flag_changed;
   }
-
-  tr_free_pattern( pat );
-  tr_free_pattern( rep );
-
-  v[0].string->size = len;
-  v[0].string->data[len] = 0;
-
-  return flag_changed;
 }
 
 static void c_string_tr(struct VM *vm, mrbc_value v[], int argc)
@@ -1205,12 +1242,12 @@ static void c_string_tr_self(struct VM *vm, mrbc_value v[], int argc)
 */
 static void c_string_start_with(struct VM *vm, mrbc_value v[], int argc)
 {
+  int ret;
   if( !(argc == 1 && mrbc_type(v[1]) == MRBC_TT_STRING)) {
     mrbc_raise( vm, MRBC_CLASS(ArgumentError), 0 );
     return;
   }
 
-  int ret;
   if( mrbc_string_size(&v[0]) < mrbc_string_size(&v[1]) ) {
     ret = 0;
   } else {
@@ -1227,13 +1264,13 @@ static void c_string_start_with(struct VM *vm, mrbc_value v[], int argc)
 */
 static void c_string_end_with(struct VM *vm, mrbc_value v[], int argc)
 {
+  int ret, offset;
   if( !(argc == 1 && mrbc_type(v[1]) == MRBC_TT_STRING)) {
     mrbc_raise( vm, MRBC_CLASS(ArgumentError), 0 );
     return;
   }
 
-  int ret;
-  int offset = mrbc_string_size(&v[0]) - mrbc_string_size(&v[1]);
+  offset = mrbc_string_size(&v[0]) - mrbc_string_size(&v[1]);
   if( offset < 0 ) {
     ret = 0;
   } else {
@@ -1250,12 +1287,13 @@ static void c_string_end_with(struct VM *vm, mrbc_value v[], int argc)
 */
 static void c_string_include(struct VM *vm, mrbc_value v[], int argc)
 {
+  int ret;
   if( !(argc == 1 && mrbc_type(v[1]) == MRBC_TT_STRING)) {
     mrbc_raise( vm, MRBC_CLASS(ArgumentError), 0 );
     return;
   }
 
-  int ret = mrbc_string_index( &v[0], &v[1], 0 );
+  ret = mrbc_string_index( &v[0], &v[1], 0 );
   SET_BOOL_RETURN(ret >= 0);
 }
 
@@ -1273,7 +1311,8 @@ static void c_string_bytes(struct VM *vm, mrbc_value v[], int argc)
   mrbc_value ret = mrbc_array_new(vm, len);
   int i;
   for (i = 0; i < len; i++) {
-    mrbc_array_set(&ret, i, &mrbc_integer_value(v[0].string->data[i]));
+    mrbc_value val = mrbc_integer_value(v[0].uni.string->data[i]);
+    mrbc_array_set(&ret, i, &val);
   }
   SET_RETURN(ret);
 }

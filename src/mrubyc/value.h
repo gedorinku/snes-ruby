@@ -193,9 +193,9 @@ typedef struct RObject mrbc_value;
   get symbol value (#mrbc_sym) from mrbc_value.
 */
 #define mrbc_type(o)		((o).tt)
-#define mrbc_integer(o)		((o).i)
-#define mrbc_float(o)		((o).d)
-#define mrbc_symbol(o)		((o).i)
+#define mrbc_integer(o)		((o).uni.i)
+#define mrbc_float(o)		((o).uni.d)
+#define mrbc_symbol(o)		((o).uni.i)
 
 // setters
 #define mrbc_set_integer(p,n)	(p)->tt = MRBC_TT_INTEGER; (p)->i = (n)

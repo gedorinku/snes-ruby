@@ -57,13 +57,13 @@ static const mrbc_func_t method_functions_Hash[] = {
 };
 
 struct RBuiltinClass mrbc_class_Hash = {
-  .sym_id = MRBC_SYM(Hash),
-  .num_builtin_method = sizeof(method_symbols_Hash) / sizeof(mrbc_sym),
-  .super = MRBC_CLASS(Object),
-  .method_link = 0,
+  MRBC_SYM(Hash),
+  sizeof(method_symbols_Hash) / sizeof(mrbc_sym),
+  MRBC_CLASS(Object),
+  0,
 #if defined(MRBC_DEBUG)
-  .name = "Hash",
+  "Hash",
 #endif
-  .method_symbols = method_symbols_Hash,
-  .method_functions = method_functions_Hash,
+  method_symbols_Hash,
+  method_functions_Hash,
 };
