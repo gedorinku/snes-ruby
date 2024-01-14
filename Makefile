@@ -2,6 +2,10 @@ ifeq ($(strip $(WDC_INCLUDE_DIR)),)
 $(error "WDC_INCLUDE_DIR environment variable is not defined correctly")
 endif
 
+ifeq ($(strip $(WDC_LIB)),)
+$(error "WDC_LIB environment variable is not defined correctly")
+endif
+
 CC	:= WDC816CC.exe
 AS	:= WDC816AS.exe
 LD	:= WDCLN.exe
@@ -67,7 +71,12 @@ clean:
 # build/%.o : %.c
 # 	$(CC) $(includes) $(CFLAGS) -O $@ $(subst /mnt/c,c:\,$<)
 
+build/%.o : listing/%.asm
+	mkdir -p $(dir $@)
+	$(AS) $(includes) $(ASFLAGS) -O $@ $(subst /mnt/c,c:\,$<)
+
 build/%.o : %.asm
+	mkdir -p $(dir $@)
 	$(AS) $(includes) $(ASFLAGS) -O $@ $(subst /mnt/c,c:\,$<)
 
 listing/%.asm : listing/%.conv.i
