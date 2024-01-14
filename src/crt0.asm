@@ -21,6 +21,7 @@
 
 _STACK_TOP  .equ $0FFF      ; 4K stack
 
+STARTUP SECTION OFFSET $008000
 _Reset:
     sei                     ; Disable interrupts
 
@@ -435,6 +436,8 @@ _emu_unused:
 _emu_abort:
 _emu_irq:
     rti
+
+    .ends
 
     .include "header.inc"
 
