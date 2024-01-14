@@ -11,8 +11,7 @@
 #include "main.rb.bytecode.h"
 
 #if !defined(MRBC_MEMORY_SIZE)
-// FIXME: 8067 より大きくすると mrbc_init_alloc に失敗する
-#define MRBC_MEMORY_SIZE (8000)
+#define MRBC_MEMORY_SIZE (40960)
 #endif
 static uint8_t memory_pool[MRBC_MEMORY_SIZE];
 
