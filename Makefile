@@ -96,7 +96,7 @@ listing/%.i : %.c
 				-C8000 \
 				-D7e2000,18000 \
 				-KE00000,0000 \
-                -Zcode=8000,ffff -U7f0000 \
+                -Zcode=8000,ffff -U7f2000 \
                 -Aregistration_data=FFB0,7FB0 \
                 -Aressource=18000,8000 \
                 -N $(ofiles) $(libs) -O $@
