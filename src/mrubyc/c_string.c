@@ -242,7 +242,7 @@ int mrbc_string_append(mrbc_value *s1, const mrbc_value *s2)
   if( mrbc_type(*s2) == MRBC_TT_STRING ) {
     memcpy(str + len1, s2->uni.string->data, len2 + 1);
   } else if( mrbc_type(*s2) == MRBC_TT_INTEGER ) {
-    str[len1] = s2->i;
+    str[len1] = s2->uni.i;
     str[len1+1] = '\0';
   }
 
@@ -433,7 +433,7 @@ static void c_string_mul(struct VM *vm, mrbc_value v[], int argc)
     return;
   }
 
-  if( v[1].i < 0 ) {
+  if( v[1].uni.i < 0 ) {
     mrbc_raise( vm, MRBC_CLASS(ArgumentError), "negative argument");
     return;
   }
@@ -446,7 +446,7 @@ static void c_string_mul(struct VM *vm, mrbc_value v[], int argc)
     {
       uint8_t *p = value.uni.string->data;
       int i;
-      for( i = 0; i < v[1].i; i++ ) {
+      for( i = 0; i < v[1].uni.i; i++ ) {
         memcpy( p, mrbc_string_cstr(&v[0]), mrbc_string_size(&v[0]) );
         p += mrbc_string_size(&v[0]);
       }
@@ -478,7 +478,7 @@ static void c_string_to_i(struct VM *vm, mrbc_value v[], int argc)
 {
   int base = 10;
   if( argc ) {
-    base = v[1].i;
+    base = v[1].uni.i;
     if( base < 2 || base > 36 ) {
       mrbc_raise( vm, MRBC_CLASS(ArgumentError), "invalid radix");
       return;
@@ -512,7 +512,7 @@ static void c_string_to_f(struct VM *vm, mrbc_value v[], int argc)
 static void c_string_to_s(struct VM *vm, mrbc_value v[], int argc)
 {
   if( v[0].tt == MRBC_TT_CLASS ) {
-    v[0] = mrbc_string_new_cstr(vm, mrbc_symid_to_str( v[0].cls->sym_id ));
+    v[0] = mrbc_string_new_cstr(vm, mrbc_symid_to_str( v[0].uni.cls->sym_id ));
     return;
   }
 }
@@ -586,7 +586,7 @@ static void c_string_insert(struct VM *vm, mrbc_value v[], int argc)
   */
   if( argc == 2 && mrbc_type(v[1]) == MRBC_TT_INTEGER &&
                    mrbc_type(v[2]) == MRBC_TT_STRING ) {
-    nth = v[1].i;
+    nth = v[1].uni.i;
     len = 1;
     val = &v[2];
   }
@@ -596,8 +596,8 @@ static void c_string_insert(struct VM *vm, mrbc_value v[], int argc)
   else if( argc == 3 && mrbc_type(v[1]) == MRBC_TT_INTEGER &&
 	                mrbc_type(v[2]) == MRBC_TT_INTEGER &&
 	                mrbc_type(v[3]) == MRBC_TT_STRING ) {
-    nth = v[1].i;
-    len = v[2].i;
+    nth = v[1].uni.i;
+    len = v[2].uni.i;
     val = &v[3];
   }
   /*
@@ -726,7 +726,7 @@ static void c_string_index(struct VM *vm, mrbc_value v[], int argc)
     offset = 0;
 
   } else if( argc == 2 && mrbc_type(v[2]) == MRBC_TT_INTEGER ) {
-    offset = v[2].i;
+    offset = v[2].uni.i;
     if( offset < 0 ) offset += mrbc_string_size(&v[0]);
     if( offset < 0 ) goto NIL_RETURN;
 
@@ -853,7 +853,7 @@ static void c_string_split(struct VM *vm, mrbc_value v[], int argc)
       mrbc_raise( vm, MRBC_CLASS(ArgumentError), 0 );
       return;
     }
-    limit = v[2].i;
+    limit = v[2].uni.i;
     if( limit == 1 ) {
       mrbc_array_push( &ret, &v[0] );
       mrbc_incref( &v[0] );

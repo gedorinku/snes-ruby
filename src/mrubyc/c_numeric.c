@@ -105,7 +105,7 @@ static void c_integer_power(struct VM *vm, mrbc_value v[], int argc)
 static void c_integer_mod(struct VM *vm, mrbc_value v[], int argc)
 {
   mrbc_int_t num = mrbc_integer(v[1]);
-  SET_INT_RETURN( v->i % num );
+  SET_INT_RETURN( v->uni.i % num );
 }
 
 
@@ -115,7 +115,7 @@ static void c_integer_mod(struct VM *vm, mrbc_value v[], int argc)
 static void c_integer_and(struct VM *vm, mrbc_value v[], int argc)
 {
   mrbc_int_t num = mrbc_integer(v[1]);
-  SET_INT_RETURN(v->i & num);
+  SET_INT_RETURN(v->uni.i & num);
 }
 
 
@@ -125,7 +125,7 @@ static void c_integer_and(struct VM *vm, mrbc_value v[], int argc)
 static void c_integer_or(struct VM *vm, mrbc_value v[], int argc)
 {
   mrbc_int_t num = mrbc_integer(v[1]);
-  SET_INT_RETURN(v->i | num);
+  SET_INT_RETURN(v->uni.i | num);
 }
 
 
@@ -135,7 +135,7 @@ static void c_integer_or(struct VM *vm, mrbc_value v[], int argc)
 static void c_integer_xor(struct VM *vm, mrbc_value v[], int argc)
 {
   mrbc_int_t num = mrbc_integer(v[1]);
-  SET_INT_RETURN( v->i ^ num );
+  SET_INT_RETURN( v->uni.i ^ num );
 }
 
 
@@ -170,7 +170,7 @@ static mrbc_int_t shift(mrbc_int_t x, mrbc_int_t y)
 static void c_integer_lshift(struct VM *vm, mrbc_value v[], int argc)
 {
   int num = mrbc_integer(v[1]);
-  SET_INT_RETURN( shift(v->i, num) );
+  SET_INT_RETURN( shift(v->uni.i, num) );
 }
 
 
@@ -180,7 +180,7 @@ static void c_integer_lshift(struct VM *vm, mrbc_value v[], int argc)
 static void c_integer_rshift(struct VM *vm, mrbc_value v[], int argc)
 {
   int num = mrbc_integer(v[1]);
-  SET_INT_RETURN( shift(v->i, -num) );
+  SET_INT_RETURN( shift(v->uni.i, -num) );
 }
 
 
@@ -272,7 +272,7 @@ static void c_integer_inspect(struct VM *vm, mrbc_value v[], int argc)
   char buf[16];
   mrbc_value value;
   if( v[0].tt == MRBC_TT_CLASS ) {
-    v[0] = mrbc_string_new_cstr(vm, mrbc_symid_to_str( v[0].cls->sym_id ));
+    v[0] = mrbc_string_new_cstr(vm, mrbc_symid_to_str( v[0].uni.cls->sym_id ));
     return;
   }
 
@@ -288,7 +288,7 @@ static void c_integer_inspect(struct VM *vm, mrbc_value v[], int argc)
  
   mrbc_printf_init( &pf, buf, sizeof(buf), NULL );
   pf.fmt.type = 'd';
-  mrbc_printf_int( &pf, v->i, base );
+  mrbc_printf_int( &pf, v->uni.i, base );
   mrbc_printf_end( &pf );
 
   value = mrbc_string_new_cstr(vm, buf);
@@ -397,7 +397,7 @@ static void c_float_to_i(struct VM *vm, mrbc_value v[], int argc)
 static void c_float_inspect(struct VM *vm, mrbc_value v[], int argc)
 {
   if( v[0].tt == MRBC_TT_CLASS ) {
-    v[0] = mrbc_string_new_cstr(vm, mrbc_symid_to_str( v[0].cls->sym_id ));
+    v[0] = mrbc_string_new_cstr(vm, mrbc_symid_to_str( v[0].uni.cls->sym_id ));
     return;
   }
 

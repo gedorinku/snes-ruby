@@ -959,7 +959,7 @@ static void c_array_pop(struct VM *vm, mrbc_value v[], int argc)
     in case of pop(n) -> Array
   */
   if( argc == 1 && mrbc_type(v[1]) == MRBC_TT_INTEGER ) {
-    int pos = mrbc_array_size(&v[0]) - v[1].i;
+    int pos = mrbc_array_size(&v[0]) - v[1].uni.i;
     mrbc_value val = mrbc_array_divide(vm, &v[0], pos);
     SET_RETURN(val);
     return;
@@ -999,7 +999,7 @@ static void c_array_shift(struct VM *vm, mrbc_value v[], int argc)
     in case of pop(n) -> Array
   */
   if( argc == 1 && mrbc_type(v[1]) == MRBC_TT_INTEGER ) {
-    val = mrbc_array_divide(vm, &v[0], v[1].i);
+    val = mrbc_array_divide(vm, &v[0], v[1].uni.i);
 
     // swap v[0] and val
     tmp = *v[0].uni.array;
@@ -1101,7 +1101,7 @@ static void c_array_inspect(struct VM *vm, mrbc_value v[], int argc)
   mrbc_value ret, v1, s1;
   int i;
   if( v[0].tt == MRBC_TT_CLASS ) {
-    v[0] = mrbc_string_new_cstr(vm, mrbc_symid_to_str( v[0].cls->sym_id ));
+    v[0] = mrbc_string_new_cstr(vm, mrbc_symid_to_str( v[0].uni.cls->sym_id ));
     return;
   }
 

@@ -198,13 +198,13 @@ typedef struct RObject mrbc_value;
 #define mrbc_symbol(o)		((o).uni.i)
 
 // setters
-#define mrbc_set_integer(p,n)	(p)->tt = MRBC_TT_INTEGER; (p)->i = (n)
-#define mrbc_set_float(p,n)	(p)->tt = MRBC_TT_FLOAT; (p)->d = (n)
+#define mrbc_set_integer(p,n)	(p)->tt = MRBC_TT_INTEGER; (p)->uni.i = (n)
+#define mrbc_set_float(p,n)	(p)->tt = MRBC_TT_FLOAT; (p)->uni.d = (n)
 #define mrbc_set_nil(p)		(p)->tt = MRBC_TT_NIL
 #define mrbc_set_true(p)	(p)->tt = MRBC_TT_TRUE
 #define mrbc_set_false(p)	(p)->tt = MRBC_TT_FALSE
 #define mrbc_set_bool(p,n)	(p)->tt = (n)? MRBC_TT_TRUE: MRBC_TT_FALSE
-#define mrbc_set_symbol(p,n)	(p)->tt = MRBC_TT_SYMBOL; (p)->i = (n)
+#define mrbc_set_symbol(p,n)	(p)->tt = MRBC_TT_SYMBOL; (p)->uni.i = (n)
 
 // make immediate values.
 // #define mrbc_integer_value(n)	((mrbc_value){.tt = MRBC_TT_INTEGER, .i=(n)})
@@ -301,21 +301,21 @@ mrbc_value mrbc_symbol_value(int n);
     mrbc_int_t nnn = (n);	\
     mrbc_decref(v);		\
     v[0].tt = MRBC_TT_INTEGER;	\
-    v[0].i = nnn;		\
+    v[0].uni.i = nnn;		\
   } while(0)
 #define SET_FLOAT_RETURN(n) do {\
     mrbc_float_t nnn = (n);	\
     mrbc_decref(v);		\
     v[0].tt = MRBC_TT_FLOAT;	\
-    v[0].d = nnn;		\
+    v[0].uni.d = nnn;		\
 } while(0)
 
 #define GET_TT_ARG(n)		(v[(n)].tt)
-#define GET_INT_ARG(n)		(v[(n)].i)
+#define GET_INT_ARG(n)		(v[(n)].uni.i)
 #define GET_ARY_ARG(n)		(v[(n)])
 #define GET_ARG(n)		(v[(n)])
-#define GET_FLOAT_ARG(n)	(v[(n)].d)
-#define GET_STRING_ARG(n)	(v[(n)].string->data)
+#define GET_FLOAT_ARG(n)	(v[(n)].uni.d)
+#define GET_STRING_ARG(n)	(v[(n)].uni.string->data)
 
 
 #if defined(MRBC_DEBUG)

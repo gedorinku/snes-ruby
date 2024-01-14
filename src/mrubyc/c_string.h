@@ -77,7 +77,7 @@ int mrbc_string_chomp(mrbc_value *src);
 */
 static int mrbc_string_compare(const mrbc_value *v1, const mrbc_value *v2)
 {
-  int len = (v1->uni.size < v2->uni.string->size) ?
+  int len = (v1->uni.string->size < v2->uni.string->size) ?
     v1->uni.string->size : v2->uni.string->size;
 
   int res = memcmp(v1->uni.string->data, v2->uni.string->data, len);

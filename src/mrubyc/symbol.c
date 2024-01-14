@@ -317,11 +317,13 @@ static void c_symbol_all_symbols(struct VM *vm, mrbc_value v[], int argc)
 
   int i;
   for( i = 0; i < sizeof(builtin_symbols) / sizeof(builtin_symbols[0]); i++ ) {
-    mrbc_array_push(&ret, &mrbc_symbol_value(i));
+    mrbc_value pv = mrbc_symbol_value(i);
+    mrbc_array_push(&ret, &pv);
   }
 
   for( i = 0; i < sym_index_pos; i++ ) {
-    mrbc_array_push(&ret, &mrbc_symbol_value(i + OFFSET_BUILTIN_SYMBOL));
+    mrbc_value pv = mrbc_symbol_value(i + OFFSET_BUILTIN_SYMBOL);
+    mrbc_array_push(&ret, &pv);
   }
   SET_RETURN(ret);
 }
@@ -345,7 +347,7 @@ static void c_symbol_inspect(struct VM *vm, mrbc_value v[], int argc)
 static void c_symbol_to_s(struct VM *vm, mrbc_value v[], int argc)
 {
   if( v[0].tt == MRBC_TT_CLASS ) {
-    v[0] = mrbc_string_new_cstr(vm, mrbc_symid_to_str( v[0].cls->sym_id ));
+    v[0] = mrbc_string_new_cstr(vm, mrbc_symid_to_str( v[0].uni.cls->sym_id ));
     return;
   }
 

@@ -91,7 +91,12 @@ mrbc_value mrbc_exception_new(struct VM *vm, struct RClass *exc_cls, const void 
   ex->message = buf;
 
  RETURN:
-  return (mrbc_value){.tt = MRBC_TT_EXCEPTION, .exception = ex};
+  {
+    mrbc_value ret = {0};
+    ret.tt = MRBC_TT_EXCEPTION;
+    ret.uni.exception = ex;
+    return ret;
+  }
 }
 
 
@@ -117,7 +122,10 @@ mrbc_value mrbc_exception_new_alloc(struct VM *vm, struct RClass *exc_cls, const
   ex->message = message;
   ex->message_size = len;
 
-  return (mrbc_value){.tt = MRBC_TT_EXCEPTION, .exception = ex};
+  mrbc_value ret = {0};
+  ret.tt = MRBC_TT_EXCEPTION;
+  ret.uni.exception = ex;
+  return ret;
 }
 
 
@@ -128,10 +136,10 @@ mrbc_value mrbc_exception_new_alloc(struct VM *vm, struct RClass *exc_cls, const
 */
 void mrbc_exception_delete(mrbc_value *value)
 {
-  if( value->exception->message_size ) {
-    mrbc_raw_free( (void *)value->exception->message );
+  if( value->uni.exception->message_size ) {
+    mrbc_raw_free( (void *)value->uni.exception->message );
   }
-  mrbc_raw_free( value->exception );
+  mrbc_raw_free( value->uni.exception );
 }
 
 
@@ -203,7 +211,7 @@ void mrbc_print_exception( const mrbc_value *v )
 {
   if( mrbc_type(*v) != MRBC_TT_EXCEPTION ) return;
 
-  const mrbc_exception *exc = v->exception;
+  const mrbc_exception *exc = v->uni.exception;
   const char *clsname = mrbc_symid_to_str(exc->cls->sym_id);
 
   mrbc_printf("Exception: %s (%s)\n",
@@ -220,7 +228,7 @@ void mrbc_print_vm_exception( const struct VM *vm )
 {
   if( mrbc_type(vm->exception) != MRBC_TT_EXCEPTION ) return;
 
-  const mrbc_exception *exc = vm->exception.exception;
+  const mrbc_exception *exc = vm->exception.uni.exception;
   const char *clsname = mrbc_symid_to_str(exc->cls->sym_id);
 
   mrbc_printf("Exception(vm_id=%d): %s (%s)\n", vm->vm_id,
@@ -239,9 +247,9 @@ static void c_exception_new(struct VM *vm, mrbc_value v[], int argc)
 
   mrbc_value value;
   if( argc == 1 && mrbc_type(v[1]) == MRBC_TT_STRING ) {
-    value = mrbc_exception_new(vm, v[0].cls, mrbc_string_cstr(&v[1]), mrbc_string_size(&v[1]));
+    value = mrbc_exception_new(vm, v[0].uni.cls, mrbc_string_cstr(&v[1]), mrbc_string_size(&v[1]));
   } else {
-    value = mrbc_exception_new(vm, v[0].cls, NULL, 0);
+    value = mrbc_exception_new(vm, v[0].uni.cls, NULL, 0);
   }
 
   SET_RETURN(value);
@@ -255,10 +263,10 @@ static void c_exception_message(struct VM *vm, mrbc_value v[], int argc)
 {
   mrbc_value value;
 
-  if( v[0].exception->message ) {
-    value = mrbc_string_new( vm, v[0].exception->message, v[0].exception->message_size );
+  if( v[0].uni.exception->message ) {
+    value = mrbc_string_new( vm, v[0].uni.exception->message, v[0].uni.exception->message_size );
   } else {
-    value = mrbc_string_new_cstr(vm, mrbc_symid_to_str(v->exception->cls->sym_id));
+    value = mrbc_string_new_cstr(vm, mrbc_symid_to_str(v->uni.exception->cls->sym_id));
   }
 
   mrbc_decref( &v[0] );

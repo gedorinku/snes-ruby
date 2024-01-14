@@ -67,7 +67,7 @@ static int set_sym_name_by_id( char *buf, int bufsiz, mrbc_sym sym_id )
  */
 static void c_object_new(struct VM *vm, mrbc_value v[], int argc)
 {
-  mrbc_class *cls = v->cls;
+  mrbc_class *cls = v->uni.cls;
   mrbc_value new_obj = mrbc_instance_new(vm, cls, 0);
   mrbc_method method;
   mrbc_callinfo *callinfo;
@@ -84,9 +84,9 @@ static void c_object_new(struct VM *vm, mrbc_value v[], int argc)
   mrbc_set_nil(&v[argc+1]);
   callinfo = mrbc_push_callinfo(vm, MRBC_SYM(initialize),
 					       (v - vm->cur_regs), argc);
-  callinfo->own_class = method.cls;
+  callinfo->own_class = method.uni_next.cls;
 
-  vm->cur_irep = method.irep;
+  vm->cur_irep = method.uni_func.irep;
   vm->inst = vm->cur_irep->inst;
   vm->cur_regs = v;
 }
@@ -139,7 +139,7 @@ static void c_object_equal3(struct VM *vm, mrbc_value v[], int argc)
   int result;
 
   if( mrbc_type(v[0]) == MRBC_TT_CLASS ) {
-    result = mrbc_obj_is_kind_of( &v[1], v[0].cls );
+    result = mrbc_obj_is_kind_of( &v[1], v[0].uni.cls );
   } else {
     result = (mrbc_compare( &v[0], &v[1] ) == 0);
   }
@@ -154,7 +154,7 @@ static void c_object_equal3(struct VM *vm, mrbc_value v[], int argc)
 static void c_object_class(struct VM *vm, mrbc_value v[], int argc)
 {
   mrbc_value value = {MRBC_TT_CLASS};
-  value.cls = find_class_by_object( v );
+  value.uni.cls = find_class_by_object( v );
   SET_RETURN( value );
 }
 
@@ -216,7 +216,7 @@ static void c_object_kind_of(struct VM *vm, mrbc_value v[], int argc)
     return;
   }
 
-  SET_BOOL_RETURN( mrbc_obj_is_kind_of( &v[0], v[1].cls ));
+  SET_BOOL_RETURN( mrbc_obj_is_kind_of( &v[0], v[1].uni.cls ));
 }
 
 
@@ -317,7 +317,7 @@ static void c_object_raise(struct VM *vm, mrbc_value v[], int argc)
   // case 3. raise ExceptionClass
   if( argc == 1 && mrbc_type(v[1]) == MRBC_TT_CLASS &&
       mrbc_obj_is_kind_of( &v[1], MRBC_CLASS(Exception))) {
-    vm->exception = mrbc_exception_new( vm, v[1].cls, 0, 0 );
+    vm->exception = mrbc_exception_new( vm, v[1].uni.cls, 0, 0 );
   } else
 
   // case 4. raise ExceptionObject
@@ -329,7 +329,7 @@ static void c_object_raise(struct VM *vm, mrbc_value v[], int argc)
   // case 5. raise ExceptionClass, "param"
   if( argc == 2 && mrbc_type(v[1]) == MRBC_TT_CLASS
                 && mrbc_type(v[2]) == MRBC_TT_STRING ) {
-    vm->exception = mrbc_exception_new( vm, v[1].cls,
+    vm->exception = mrbc_exception_new( vm, v[1].uni.cls,
 			mrbc_string_cstr(&v[2]), mrbc_string_size(&v[2]) );
   } else
 
@@ -402,7 +402,7 @@ static void c_object_instance_variables(struct VM *vm, mrbc_value v[], int argc)
     int i;
     for( i = 0; i < kvh->n_stored; i++ ) {
       mrbc_printf("%s:@%s", (i == 0 ? "" : ", "),
-      mrbc_symid_to_str( kvh->data[i].sym_id ));
+      mrbc_symid_to_str( kvh->uni.data[i].sym_id ));
     }
   }
 
@@ -510,7 +510,7 @@ static void c_object_attr_reader(struct VM *vm, mrbc_value v[], int argc)
     {
       // define reader method
       const char *name = mrbc_symbol_cstr(&v[i]);
-      mrbc_define_method(vm, v[0].cls, name, c_object_getiv);
+      mrbc_define_method(vm, v[0].uni.cls, name, c_object_getiv);
     }
   }
 }
@@ -535,7 +535,7 @@ static void c_object_attr_accessor(struct VM *vm, mrbc_value v[], int argc)
 
     // define reader method
     name = mrbc_symbol_cstr(&v[i]);
-    mrbc_define_method(vm, v[0].cls, name, c_object_getiv);
+    mrbc_define_method(vm, v[0].uni.cls, name, c_object_getiv);
 
     // make string "....=" and define writer method.
     len = strlen(name);
@@ -545,7 +545,7 @@ static void c_object_attr_accessor(struct VM *vm, mrbc_value v[], int argc)
     namebuf[len] = '=';
     namebuf[len+1] = 0;
     mrbc_symbol_new(vm, namebuf);
-    mrbc_define_method(vm, v[0].cls, namebuf, c_object_setiv);
+    mrbc_define_method(vm, v[0].uni.cls, namebuf, c_object_setiv);
     mrbc_free(vm, namebuf);
   }
 }
@@ -588,7 +588,7 @@ static void c_object_sprintf(struct VM *vm, mrbc_value v[], int argc)
       switch(pf.fmt.type) {
       case 'c':
         if( mrbc_type(v[i]) == MRBC_TT_INTEGER ) {
-    ret = mrbc_printf_char( &pf, v[i].i );
+    ret = mrbc_printf_char( &pf, v[i].uni.i );
         } else if( mrbc_type(v[i]) == MRBC_TT_STRING ) {
     ret = mrbc_printf_char( &pf, mrbc_string_cstr(&v[i])[0] );
         }
@@ -606,7 +606,7 @@ static void c_object_sprintf(struct VM *vm, mrbc_value v[], int argc)
       case 'i':
       case 'u':
         if( mrbc_type(v[i]) == MRBC_TT_INTEGER ) {
-    ret = mrbc_printf_int( &pf, v[i].i, 10);
+    ret = mrbc_printf_int( &pf, v[i].uni.i, 10);
   #if MRBC_USE_FLOAT
         } else if( mrbc_type(v[i]) == MRBC_TT_FLOAT ) {
     ret = mrbc_printf_int( &pf, (mrbc_int_t)v[i].d, 10);
@@ -620,20 +620,20 @@ static void c_object_sprintf(struct VM *vm, mrbc_value v[], int argc)
       case 'b':
       case 'B':
         if( mrbc_type(v[i]) == MRBC_TT_INTEGER ) {
-    ret = mrbc_printf_bit( &pf, v[i].i, 1);
+    ret = mrbc_printf_bit( &pf, v[i].uni.i, 1);
         }
         break;
 
       case 'x':
       case 'X':
         if( mrbc_type(v[i]) == MRBC_TT_INTEGER ) {
-    ret = mrbc_printf_bit( &pf, v[i].i, 4);
+    ret = mrbc_printf_bit( &pf, v[i].uni.i, 4);
         }
         break;
 
       case 'o':
         if( mrbc_type(v[i]) == MRBC_TT_INTEGER ) {
-    ret = mrbc_printf_bit( &pf, v[i].i, 3);
+    ret = mrbc_printf_bit( &pf, v[i].uni.i, 3);
         }
         break;
 
@@ -646,7 +646,7 @@ static void c_object_sprintf(struct VM *vm, mrbc_value v[], int argc)
         if( mrbc_type(v[i]) == MRBC_TT_FLOAT ) {
     ret = mrbc_printf_float( &pf, v[i].d );
         } else if( mrbc_type(v[i]) == MRBC_TT_INTEGER ) {
-    ret = mrbc_printf_float( &pf, v[i].i );
+    ret = mrbc_printf_float( &pf, v[i].uni.i );
         }
         break;
   #endif
