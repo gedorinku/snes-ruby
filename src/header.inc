@@ -72,7 +72,7 @@ SNESHEADER .section offset $FFB0
     .org $FFD5
     db  MAP_MODE            ; D5 - Map mode
     db  CART_ROM            ; D6 - Cart type
-    db  SIZE_256KiB         ; D7 - ROM size
+    db  SIZE_4MiB           ; D7 - ROM size
     db  SIZE_NONE           ; D8 - Cart RAM size
     db  DEST_USA            ; D9 - Destination code (NTSC/PAL)
     db  $33                 ; DA - License code, some emulators care about this in edge cases, 0 or $33

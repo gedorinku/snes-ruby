@@ -92,12 +92,7 @@ listing/%.i : %.c
 	sed -i -e 's/^# \([0-9]* \)/\/\/ \1/g' $@
 
 %.sfc:
-	$(LD) -HB -M21 -V -T -Pff \
-				-C8000 \
-				-D7e2000,18000 \
-				-KE00000,0000 \
-                -Zcode=8000,ffff -U7f2000 \
-                -Aregistration_data=FFB0,7FB0 \
-                -Aressource=18000,8000 \
-                -N $(ofiles) $(libs) -O $@
+	$(LD) -HB -V -T -Pff \
+				-Zcode=8000 -C8000 -K8000 -D7e2000,0000 -U7f2000,0000 \
+				-N $(ofiles) $(libs) -O $@
 	@sed -e "s/^\(\w\)/;\1/g" $(target).map | sed -e "s/^\t//g" > $(target).sym

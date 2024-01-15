@@ -27,13 +27,13 @@ int run()
     if (vm == NULL)
     {
         // consoleDrawText(10, 10, "vm is null");
-        return 1;
+        return 123;
     }
 
     if (mrbc_load_mrb(vm, mrbbuf) != 0)
     {
         // consoleDrawText(10, 10, "failed to load");
-        return 1;
+        return 456;
     }
 
     mrbc_vm_begin(vm);
