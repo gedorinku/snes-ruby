@@ -180,7 +180,7 @@ _Reset:
 
     ldx     #<_ROM_BEG_DATA             ; Load source into X
     ldy     #<_BEG_DATA                 ; Load dest into Y
-    mvn     #^_ROM_BEG_DATA,#^_BEG_DATA ; Copy bytes
+    mvn     #$C0+^_ROM_BEG_DATA,#^_BEG_DATA ; Copy bytes
 
 ; Now, clear out the uninitialized data area. We assume that it is in the same bank as DATA.
 ; Edit: no need, clear entire wram on reset.

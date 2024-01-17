@@ -10,16 +10,15 @@
 
 #include "main.rb.bytecode.h"
 
-#if !defined(MRBC_MEMORY_SIZE)
-#define MRBC_MEMORY_SIZE (40960)
-#endif
-static uint8_t memory_pool[MRBC_MEMORY_SIZE];
+// #define MRBC_MEMORY_SIZE (40960)
+#define MRBC_MEMORY_SIZE (0xc000)
+static uint8_t *ruby_memory_pool;
 
 extern uint8_t tilfont, palfont;
 
 int run()
 {
-    mrbc_init_alloc(memory_pool, MRBC_MEMORY_SIZE);
+    mrbc_init_alloc(ruby_memory_pool, MRBC_MEMORY_SIZE);
     mrbc_init_global();
     mrbc_init_class();
 
@@ -48,6 +47,7 @@ volatile static int ret = 0;
 
 int main(void)
 {
+    ruby_memory_pool = malloc(MRBC_MEMORY_SIZE * sizeof(uint8_t));
     // // Initialize SNES
     // consoleInit();
 
