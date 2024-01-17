@@ -18,7 +18,7 @@ extern uint8_t tilfont, palfont;
 
 int run()
 {
-    mrbc_init_alloc(ruby_memory_pool, MRBC_MEMORY_SIZE);
+    // mrbc_init_alloc(ruby_memory_pool, MRBC_MEMORY_SIZE);
     mrbc_init_global();
     mrbc_init_class();
 
@@ -47,7 +47,7 @@ volatile static int ret = 0;
 
 int main(void)
 {
-    ruby_memory_pool = malloc(MRBC_MEMORY_SIZE * sizeof(uint8_t));
+    // ruby_memory_pool = malloc(MRBC_MEMORY_SIZE * sizeof(uint8_t));
     // // Initialize SNES
     // consoleInit();
 

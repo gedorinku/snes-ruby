@@ -34,11 +34,12 @@ LDFLAGS	:= -B -E -T -P00 -F hirom.cfg
 libs	:= -LCL
 
 includes:= $(foreach dir,$(incdirs),-I$(dir))
-DEFINES := -DSIZEOF_INT=2 -DSIZEOF_LONG=4 -DMRBC_USE_FLOAT=0
+DEFINES := -DSIZEOF_INT=2 -DSIZEOF_LONG=4 -DMRBC_USE_FLOAT=0 -DMRBC_ALLOC_LIBC=1
 
 export VPATH	:= $(foreach dir,$(sources),$(CURDIR)/$(dir))
 #--------------------------------------------------
 .PHONY: all debug release $(listing) clean run run2
+.PRECIOUS: $(listfiles) $(cfiles:%.c=listing/%.conv.i)
 
 all: release
 
@@ -95,4 +96,4 @@ listing/%.i : %.c
 	$(LD) -HB -V -T -Pff \
 				-Zcode=8000 -C8000 -K8000 -D7e2000,0000 -U7e8000,0000 \
 				-N $(ofiles) $(libs) -O $@
-	@sed -e "s/^\(\w\)/;\1/g" $(target).map | sed -e "s/^\t//g" > $(target).sym
+	@sed -e "s/^\(\w\)/;\1/g" $(target).map | sed -e "s/^\t//g" | sed "s/~//g" > $(target).sym
