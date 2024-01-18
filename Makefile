@@ -22,6 +22,11 @@ incdirs	:= $(sources) $(build) src/mrubyc
 cfiles = $(wildcard $(sources)/*.c)
 cfiles += $(wildcard $(sources)/*/*.c)
 cfiles += $(wildcard $(sources)/*/*/*.c)
+cfiles += $(sources)/mrb_bytecode.c
+
+rubyfiles = $(wildcard $(sources)/*.rb)
+rubyfiles += $(wildcard $(sources)/*/*.rb)
+rubyfiles += $(wildcard $(sources)/*/*/*.rb)
 
 sfiles  = $(wildcard $(sources)/*.asm)
 sfiles += $(wildcard $(sources)/*/*.asm)
@@ -31,7 +36,7 @@ ofiles	:= $(cfiles:%.c=build/%.o) $(sfiles:%.asm=build/%.o)
 listfiles:= $(cfiles:%.c=listing/%.asm) $(cfiles:%.c=listing/%.i)
 
 LDFLAGS	:= -B -E -T -P00 -F hirom.cfg
-libs	:= -LCL
+libs	:= -LMS -LCL
 
 includes:= $(foreach dir,$(incdirs),-I$(dir))
 DEFINES := -DSIZEOF_INT=2 -DSIZEOF_LONG=4 -DMRBC_USE_FLOAT=0 -DMRBC_ALLOC_LIBC=1
@@ -65,11 +70,9 @@ $(listing): $(cfiles)
 clean:
 	rm -rf $(build) $(output) $(target).bnk $(target).sym $(target).map $(listing)
 
-%.asm : %.png %.grit
-	$(snesgrit) $<
-
-# build/%.o : %.c
-# 	$(CC) $(includes) $(CFLAGS) -O $@ $(subst /mnt/c,c:\,$<)
+src/mrb_bytecode.c : $(rubyfiles)
+	mrbc -s --remove-lv -Bmrbbuf -o $@ $<
+	sed -i '1i#include "int8.h"' $@
 
 build/%.o : listing/%.asm
 	mkdir -p $(dir $@)
