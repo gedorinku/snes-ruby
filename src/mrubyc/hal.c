@@ -1,26 +1,26 @@
 #include <string.h>
 #include "hal.h"
 
-#define HAL_BUF_SIZE (256)
-static char hal_buf[HAL_BUF_SIZE];
-static int hal_buf_pos = 0;
+#define HAL_BUF_SIZE (1024)
+static char hal_write_buf[HAL_BUF_SIZE];
+static int hal_write_buf_pos = 0;
 
 int hal_write(int fd, const void *buf, int nbytes) {
     int l = 0;
     while (l < nbytes) {
-        int s = HAL_BUF_SIZE - hal_buf_pos;
-        if ((nbytes - l) < s) {
-            s = (nbytes - l);
+        int size = HAL_BUF_SIZE - hal_write_buf_pos;
+        if ((nbytes - l) < size) {
+            size = (nbytes - l);
         }
 
-        memset(hal_buf + hal_buf_pos, 0, s);
-        memcpy(hal_buf, (const char *)buf + l, s);
+        memset(hal_write_buf + hal_write_buf_pos, 0, size);
+        memcpy(hal_write_buf + hal_write_buf_pos, (const char *)buf + l, size);
 
-        l += s;
-        hal_buf_pos += s;
+        l += size;
+        hal_write_buf_pos += size;
 
-        if (HAL_BUF_SIZE <= hal_buf_pos) {
-            hal_buf_pos = 0;
+        if (HAL_BUF_SIZE <= hal_write_buf_pos) {
+            hal_write_buf_pos = 0;
         }
     }
 
