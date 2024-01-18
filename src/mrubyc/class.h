@@ -82,7 +82,7 @@ typedef struct RInstance {
 
   struct RClass *cls;
   struct RKeyValueHandle ivar;
-  uint8_t *data;
+  uint8_t data[1];
 
 } mrbc_instance;
 typedef struct RInstance mrb_instance;

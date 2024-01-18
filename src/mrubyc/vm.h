@@ -56,7 +56,7 @@ typedef struct IREP {
   const uint8_t *inst;		//!< pointer to instruction in RITE binary
   const uint8_t *pool;		//!< pointer to pool in RITE binary
 
-  uint8_t *data;		//!< variable data. (see load.c)
+  uint8_t data[1];		//!< variable data. (see load.c)
 				//!<  mrbc_sym   tbl_syms[slen]
 				//!<  uint16_t   tbl_pools[plen]
 				//!<  mrbc_irep *tbl_ireps[rlen]
@@ -152,7 +152,7 @@ typedef struct VM {
   mrbc_proc	  *ret_blk;		//!< Return block.
 
   mrbc_value	  exception;		//!< Raised exception or nil.
-  mrbc_value      *regs;
+  mrbc_value      regs[1];
 } mrbc_vm;
 typedef struct VM mrb_vm;
 
