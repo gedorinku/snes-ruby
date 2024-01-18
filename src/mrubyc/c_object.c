@@ -47,14 +47,17 @@ static int set_sym_name_by_id( char *buf, int bufsiz, mrbc_sym sym_id )
   }
 
   // nested case.
-  mrbc_sym id1, id2;
-  mrbc_separate_nested_symid( sym_id, &id1, &id2 );
+  {
+    mrbc_sym id1, id2;
+    int n;
+    mrbc_separate_nested_symid( sym_id, &id1, &id2 );
 
-  int n = set_sym_name_by_id( buf, bufsiz, id1 );
-  n += mrbc_strcpy( buf+n, bufsiz-n, "::" );
-  n += set_sym_name_by_id( buf+n, bufsiz-n, id2 );
+    n = set_sym_name_by_id( buf, bufsiz, id1 );
+    n += mrbc_strcpy( buf+n, bufsiz-n, "::" );
+    n += set_sym_name_by_id( buf+n, bufsiz-n, id2 );
 
-  return n;
+    return n;
+  }
 }
 
 
@@ -64,24 +67,26 @@ static int set_sym_name_by_id( char *buf, int bufsiz, mrbc_sym sym_id )
  */
 static void c_object_new(struct VM *vm, mrbc_value v[], int argc)
 {
-  mrbc_class *cls = v->cls;
+  mrbc_class *cls = v->uni.cls;
   mrbc_value new_obj = mrbc_instance_new(vm, cls, 0);
-  if( new_obj.instance == NULL ) return;	// ENOMEM
+  mrbc_method method;
+  mrbc_callinfo *callinfo;
+  if( new_obj.uni.instance == NULL ) return;	// ENOMEM
 
   mrbc_decref(&v[0]);
   v[0] = new_obj;
 
   // call the initialize method.
-  mrbc_method method;
+  
   if( mrbc_find_method( &method, cls, MRBC_SYM(initialize) ) == NULL ) return;
 
   mrbc_decref(&v[argc+1]);
   mrbc_set_nil(&v[argc+1]);
-  mrbc_callinfo *callinfo = mrbc_push_callinfo(vm, MRBC_SYM(initialize),
+  callinfo = mrbc_push_callinfo(vm, MRBC_SYM(initialize),
 					       (v - vm->cur_regs), argc);
-  callinfo->own_class = method.cls;
+  callinfo->own_class = method.uni_next.cls;
 
-  vm->cur_irep = method.irep;
+  vm->cur_irep = method.uni_func.irep;
   vm->inst = vm->cur_irep->inst;
   vm->cur_regs = v;
 }
@@ -134,7 +139,7 @@ static void c_object_equal3(struct VM *vm, mrbc_value v[], int argc)
   int result;
 
   if( mrbc_type(v[0]) == MRBC_TT_CLASS ) {
-    result = mrbc_obj_is_kind_of( &v[1], v[0].cls );
+    result = mrbc_obj_is_kind_of( &v[1], v[0].uni.cls );
   } else {
     result = (mrbc_compare( &v[0], &v[1] ) == 0);
   }
@@ -148,8 +153,8 @@ static void c_object_equal3(struct VM *vm, mrbc_value v[], int argc)
  */
 static void c_object_class(struct VM *vm, mrbc_value v[], int argc)
 {
-  mrbc_value value = {.tt = MRBC_TT_CLASS};
-  value.cls = find_class_by_object( v );
+  mrbc_value value = {MRBC_TT_CLASS};
+  value.uni.cls = find_class_by_object( v );
   SET_RETURN( value );
 }
 
@@ -160,8 +165,8 @@ static void c_object_class(struct VM *vm, mrbc_value v[], int argc)
 static void c_object_dup(struct VM *vm, mrbc_value v[], int argc)
 {
   if( mrbc_type(v[0]) == MRBC_TT_OBJECT ) {
-    mrbc_value new_obj = mrbc_instance_new(vm, v->instance->cls, 0);
-    mrbc_kv_dup( &v->instance->ivar, &new_obj.instance->ivar );
+    mrbc_value new_obj = mrbc_instance_new(vm, v->uni.instance->cls, 0);
+    mrbc_kv_dup( &v->uni.instance->ivar, &new_obj.uni.instance->ivar );
 
     mrbc_decref( v );
     *v = new_obj;
@@ -182,17 +187,19 @@ static void c_object_block_given(struct VM *vm, mrbc_value v[], int argc)
   mrbc_callinfo *callinfo = vm->callinfo_tail;
   if( !callinfo ) goto RETURN_FALSE;
 
-  mrbc_value *regs = callinfo->cur_regs + callinfo->reg_offset;
+  {
+    mrbc_value *regs = callinfo->cur_regs + callinfo->reg_offset;
 
-  if( mrbc_type(regs[0]) == MRBC_TT_PROC ) {
-    callinfo = regs[0].proc->callinfo_self;
-    if( !callinfo ) goto RETURN_FALSE;
+    if( mrbc_type(regs[0]) == MRBC_TT_PROC ) {
+      callinfo = regs[0].uni.proc->callinfo_self;
+      if( !callinfo ) goto RETURN_FALSE;
 
-    regs = callinfo->cur_regs + callinfo->reg_offset;
+      regs = callinfo->cur_regs + callinfo->reg_offset;
+    }
+
+    SET_BOOL_RETURN( mrbc_type(regs[callinfo->n_args+1]) == MRBC_TT_PROC );
+    return;
   }
-
-  SET_BOOL_RETURN( mrbc_type(regs[callinfo->n_args+1]) == MRBC_TT_PROC );
-  return;
 
  RETURN_FALSE:
   SET_FALSE_RETURN();
@@ -209,7 +216,7 @@ static void c_object_kind_of(struct VM *vm, mrbc_value v[], int argc)
     return;
   }
 
-  SET_BOOL_RETURN( mrbc_obj_is_kind_of( &v[0], v[1].cls ));
+  SET_BOOL_RETURN( mrbc_obj_is_kind_of( &v[0], v[1].uni.cls ));
 }
 
 
@@ -239,14 +246,14 @@ static void c_object_p(struct VM *vm, mrbc_value v[], int argc)
     SET_RETURN(v[1]);
   } else {
     mrbc_value value = mrbc_array_new(vm, argc);
-    if( value.array == NULL ) {
+    if( value.uni.array == NULL ) {
       SET_NIL_RETURN();  // ENOMEM
     } else {
       for ( i = 1; i <= argc; i++ ) {
         mrbc_incref( &v[i] );
-        value.array->data[i-1] = v[i];
+        value.uni.array->data[i-1] = v[i];
       }
-      value.array->n_stored = argc;
+      value.uni.array->n_stored = argc;
       SET_RETURN(value);
     }
   }
@@ -310,7 +317,7 @@ static void c_object_raise(struct VM *vm, mrbc_value v[], int argc)
   // case 3. raise ExceptionClass
   if( argc == 1 && mrbc_type(v[1]) == MRBC_TT_CLASS &&
       mrbc_obj_is_kind_of( &v[1], MRBC_CLASS(Exception))) {
-    vm->exception = mrbc_exception_new( vm, v[1].cls, 0, 0 );
+    vm->exception = mrbc_exception_new( vm, v[1].uni.cls, 0, 0 );
   } else
 
   // case 4. raise ExceptionObject
@@ -322,14 +329,14 @@ static void c_object_raise(struct VM *vm, mrbc_value v[], int argc)
   // case 5. raise ExceptionClass, "param"
   if( argc == 2 && mrbc_type(v[1]) == MRBC_TT_CLASS
                 && mrbc_type(v[2]) == MRBC_TT_STRING ) {
-    vm->exception = mrbc_exception_new( vm, v[1].cls,
+    vm->exception = mrbc_exception_new( vm, v[1].uni.cls,
 			mrbc_string_cstr(&v[2]), mrbc_string_size(&v[2]) );
   } else
 
   // case 6. raise ExceptionObject, "param"
   if( argc == 2 && mrbc_type(v[1]) == MRBC_TT_EXCEPTION
                 && mrbc_type(v[2]) == MRBC_TT_STRING ) {
-    vm->exception = mrbc_exception_new( vm, v[1].exception->cls,
+    vm->exception = mrbc_exception_new( vm, v[1].uni.exception->cls,
 			mrbc_string_cstr(&v[2]), mrbc_string_size(&v[2]) );
   } else {
 
@@ -359,17 +366,18 @@ static void c_object_instance_methods(struct VM *vm, mrbc_value v[], int argc)
 {
   // TODO: check argument.
 
-  // temporary code for operation check.
-  mrbc_printf("[");
   int flag_first = 1;
 
   mrbc_class *cls = find_class_by_object( v );
   mrbc_method *method = cls->method_link;
+  // temporary code for operation check.
+  mrbc_printf("[");
+  
   while( method ) {
     mrbc_printf("%s:%s", (flag_first ? "" : ", "),
 		mrbc_symid_to_str(method->sym_id) );
     flag_first = 0;
-    method = method->next;
+    method = method->uni_next.next;
   }
 
   mrbc_printf("]");
@@ -385,15 +393,17 @@ static void c_object_instance_variables(struct VM *vm, mrbc_value v[], int argc)
 {
   // temporary code for operation check.
 #if 1
-  mrbc_kv_handle *kvh = &v[0].instance->ivar;
+  mrbc_kv_handle *kvh = &v[0].uni.instance->ivar;
 
   mrbc_printf("n = %d/%d ", kvh->n_stored, kvh->data_size);
   mrbc_printf("[");
 
-  int i;
-  for( i = 0; i < kvh->n_stored; i++ ) {
-    mrbc_printf("%s:@%s", (i == 0 ? "" : ", "),
-		mrbc_symid_to_str( kvh->data[i].sym_id ));
+  {
+    int i;
+    for( i = 0; i < kvh->n_stored; i++ ) {
+      mrbc_printf("%s:@%s", (i == 0 ? "" : ", "),
+      mrbc_symid_to_str( kvh->uni.data[i].sym_id ));
+    }
   }
 
   mrbc_printf("]\n");
@@ -420,17 +430,31 @@ static void c_object_memory_statistics(struct VM *vm, mrbc_value v[], int argc)
   }
 
   // make a return value.
-  mrbc_value ret = mrbc_hash_new(vm, 4);
-  mrbc_hash_set(&ret, &mrbc_symbol_value( mrbc_str_to_symid("total") ),
-		      &mrbc_integer_value( mem.total ));
-  mrbc_hash_set(&ret, &mrbc_symbol_value( mrbc_str_to_symid("used") ),
-		      &mrbc_integer_value( mem.used ));
-  mrbc_hash_set(&ret, &mrbc_symbol_value( mrbc_str_to_symid("free") ),
-		      &mrbc_integer_value( mem.free ));
-  mrbc_hash_set(&ret, &mrbc_symbol_value( mrbc_str_to_symid("fragmentation") ),
-		      &mrbc_integer_value( mem.fragmentation ));
+  {
+    mrbc_value ret = mrbc_hash_new(vm, 4), key, val;
 
-  SET_RETURN(ret);
+    key = mrbc_symbol_value( mrbc_str_to_symid("total") );
+    val = mrbc_integer_value( mem.total );
+    mrbc_hash_set(&ret, &key,
+            &val);
+
+    key = mrbc_symbol_value( mrbc_str_to_symid("used") );
+    val = mrbc_integer_value( mem.used );
+    mrbc_hash_set(&ret, &key,
+            &val);
+
+    key = mrbc_symbol_value( mrbc_str_to_symid("free") );
+    val = mrbc_integer_value( mem.free );
+    mrbc_hash_set(&ret, &key,
+            &val);
+
+    key = mrbc_symbol_value( mrbc_str_to_symid("fragmentation") );
+    val = mrbc_integer_value( mem.fragmentation );
+    mrbc_hash_set(&ret, &key,
+            &val);
+
+    SET_RETURN(ret);
+  }
 }
 #endif  // MRBC_ALLOC_LIBC
 #endif  // MRBC_DEBUG
@@ -460,10 +484,13 @@ static void c_object_setiv(struct VM *vm, mrbc_value v[], int argc)
 
   memcpy( namebuf, name, len-1 );
   namebuf[len-1] = '\0';	// delete '='
-  mrbc_sym sym_id = mrbc_str_to_symid(namebuf);
 
-  mrbc_instance_setiv(&v[0], sym_id, &v[1]);
-  mrbc_free(vm, namebuf);
+  {
+    mrbc_sym sym_id = mrbc_str_to_symid(namebuf);
+
+    mrbc_instance_setiv(&v[0], sym_id, &v[1]);
+    mrbc_free(vm, namebuf);
+  }
 }
 
 
@@ -480,9 +507,11 @@ static void c_object_attr_reader(struct VM *vm, mrbc_value v[], int argc)
       return;
     }
 
-    // define reader method
-    const char *name = mrbc_symbol_cstr(&v[i]);
-    mrbc_define_method(vm, v[0].cls, name, c_object_getiv);
+    {
+      // define reader method
+      const char *name = mrbc_symbol_cstr(&v[i]);
+      mrbc_define_method(vm, v[0].uni.cls, name, c_object_getiv);
+    }
   }
 }
 
@@ -494,6 +523,10 @@ static void c_object_attr_accessor(struct VM *vm, mrbc_value v[], int argc)
 {
   int i;
   for( i = 1; i <= argc; i++ ) {
+    const char *name;
+    char *namebuf;
+    int len;
+
     if( mrbc_type(v[i]) != MRBC_TT_SYMBOL ) {
       // Not support "String" only :symbol
       mrbc_raise(vm, MRBC_CLASS(TypeError), "not a symbol");
@@ -501,18 +534,18 @@ static void c_object_attr_accessor(struct VM *vm, mrbc_value v[], int argc)
     }
 
     // define reader method
-    const char *name = mrbc_symbol_cstr(&v[i]);
-    mrbc_define_method(vm, v[0].cls, name, c_object_getiv);
+    name = mrbc_symbol_cstr(&v[i]);
+    mrbc_define_method(vm, v[0].uni.cls, name, c_object_getiv);
 
     // make string "....=" and define writer method.
-    int len = strlen(name);
-    char *namebuf = mrbc_alloc(vm, len+2);
+    len = strlen(name);
+    namebuf = mrbc_alloc(vm, len+2);
     if( !namebuf ) return;
     memcpy(namebuf, name, len);
     namebuf[len] = '=';
     namebuf[len+1] = 0;
     mrbc_symbol_new(vm, namebuf);
-    mrbc_define_method(vm, v[0].cls, namebuf, c_object_setiv);
+    mrbc_define_method(vm, v[0].uni.cls, namebuf, c_object_setiv);
     mrbc_free(vm, namebuf);
   }
 }
@@ -532,119 +565,121 @@ static void c_object_sprintf(struct VM *vm, mrbc_value v[], int argc)
     return;
   }
 
-  int buflen = BUF_INC_STEP;
-  char *buf = mrbc_alloc(vm, buflen);
-  if( !buf ) { return; }	// ENOMEM raise?
+  {
+    int buflen = BUF_INC_STEP, i = 2, ret;
+    char *buf = mrbc_alloc(vm, buflen);
+    mrbc_printf_t pf;
+    if( !buf ) { return; }	// ENOMEM raise?
 
-  mrbc_printf_t pf;
-  mrbc_printf_init( &pf, buf, buflen, mrbc_string_cstr(format) );
+    mrbc_printf_init( &pf, buf, buflen, mrbc_string_cstr(format) );
 
-  int i = 2;
-  int ret;
-  while( 1 ) {
-    mrbc_printf_t pf_bak = pf;
-    ret = mrbc_printf_main( &pf );
-    if( ret == 0 ) break;	// normal break loop.
-    if( ret < 0 ) goto INCREASE_BUFFER;
+    while( 1 ) {
+      mrbc_printf_t pf_bak = pf;
+      ret = mrbc_printf_main( &pf );
+      if( ret == 0 ) break;	// normal break loop.
+      if( ret < 0 ) goto INCREASE_BUFFER;
 
-    if( i > argc ) {
-      mrbc_raise(vm, MRBC_CLASS(ArgumentError), "too few arguments");
-      break;
+      if( i > argc ) {
+        mrbc_raise(vm, MRBC_CLASS(ArgumentError), "too few arguments");
+        break;
+      }
+
+      // maybe ret == 1
+      switch(pf.fmt.type) {
+      case 'c':
+        if( mrbc_type(v[i]) == MRBC_TT_INTEGER ) {
+    ret = mrbc_printf_char( &pf, v[i].uni.i );
+        } else if( mrbc_type(v[i]) == MRBC_TT_STRING ) {
+    ret = mrbc_printf_char( &pf, mrbc_string_cstr(&v[i])[0] );
+        }
+        break;
+
+      case 's':
+        if( mrbc_type(v[i]) == MRBC_TT_STRING ) {
+    ret = mrbc_printf_bstr( &pf, mrbc_string_cstr(&v[i]), mrbc_string_size(&v[i]),' ');
+        } else if( mrbc_type(v[i]) == MRBC_TT_SYMBOL ) {
+    ret = mrbc_printf_str( &pf, mrbc_symbol_cstr( &v[i] ), ' ');
+        }
+        break;
+
+      case 'd':
+      case 'i':
+      case 'u':
+        if( mrbc_type(v[i]) == MRBC_TT_INTEGER ) {
+    ret = mrbc_printf_int( &pf, v[i].uni.i, 10);
+  #if MRBC_USE_FLOAT
+        } else if( mrbc_type(v[i]) == MRBC_TT_FLOAT ) {
+    ret = mrbc_printf_int( &pf, (mrbc_int_t)v[i].d, 10);
+  #endif
+        } else if( mrbc_type(v[i]) == MRBC_TT_STRING ) {
+    mrbc_int_t ival = atol(mrbc_string_cstr(&v[i]));
+    ret = mrbc_printf_int( &pf, ival, 10 );
+        }
+        break;
+
+      case 'b':
+      case 'B':
+        if( mrbc_type(v[i]) == MRBC_TT_INTEGER ) {
+    ret = mrbc_printf_bit( &pf, v[i].uni.i, 1);
+        }
+        break;
+
+      case 'x':
+      case 'X':
+        if( mrbc_type(v[i]) == MRBC_TT_INTEGER ) {
+    ret = mrbc_printf_bit( &pf, v[i].uni.i, 4);
+        }
+        break;
+
+      case 'o':
+        if( mrbc_type(v[i]) == MRBC_TT_INTEGER ) {
+    ret = mrbc_printf_bit( &pf, v[i].uni.i, 3);
+        }
+        break;
+
+  #if MRBC_USE_FLOAT
+      case 'f':
+      case 'e':
+      case 'E':
+      case 'g':
+      case 'G':
+        if( mrbc_type(v[i]) == MRBC_TT_FLOAT ) {
+    ret = mrbc_printf_float( &pf, v[i].d );
+        } else if( mrbc_type(v[i]) == MRBC_TT_INTEGER ) {
+    ret = mrbc_printf_float( &pf, v[i].uni.i );
+        }
+        break;
+  #endif
+
+      default:
+        break;
+      }
+      if( ret >= 0 ) {
+        i++;
+        continue;		// normal next loop.
+      }
+
+      // maybe buffer full. (ret == -1)
+      if( pf.fmt.width > BUF_INC_STEP ) buflen += pf.fmt.width;
+      pf = pf_bak;
+
+    INCREASE_BUFFER:
+      buflen += BUF_INC_STEP;
+      buf = mrbc_realloc(vm, pf.buf, buflen);
+      if( !buf ) { return; }	// ENOMEM raise? TODO: leak memory.
+      mrbc_printf_replace_buffer(&pf, buf, buflen);
     }
+    mrbc_printf_end( &pf );
 
-    // maybe ret == 1
-    switch(pf.fmt.type) {
-    case 'c':
-      if( mrbc_type(v[i]) == MRBC_TT_INTEGER ) {
-	ret = mrbc_printf_char( &pf, v[i].i );
-      } else if( mrbc_type(v[i]) == MRBC_TT_STRING ) {
-	ret = mrbc_printf_char( &pf, mrbc_string_cstr(&v[i])[0] );
-      }
-      break;
+    buflen = mrbc_printf_len( &pf );
+    mrbc_realloc(vm, pf.buf, buflen+1);	// shrink suitable size.
 
-    case 's':
-      if( mrbc_type(v[i]) == MRBC_TT_STRING ) {
-	ret = mrbc_printf_bstr( &pf, mrbc_string_cstr(&v[i]), mrbc_string_size(&v[i]),' ');
-      } else if( mrbc_type(v[i]) == MRBC_TT_SYMBOL ) {
-	ret = mrbc_printf_str( &pf, mrbc_symbol_cstr( &v[i] ), ' ');
-      }
-      break;
+    {
+      mrbc_value value = mrbc_string_new_alloc( vm, pf.buf, buflen );
 
-    case 'd':
-    case 'i':
-    case 'u':
-      if( mrbc_type(v[i]) == MRBC_TT_INTEGER ) {
-	ret = mrbc_printf_int( &pf, v[i].i, 10);
-#if MRBC_USE_FLOAT
-      } else if( mrbc_type(v[i]) == MRBC_TT_FLOAT ) {
-	ret = mrbc_printf_int( &pf, (mrbc_int_t)v[i].d, 10);
-#endif
-      } else if( mrbc_type(v[i]) == MRBC_TT_STRING ) {
-	mrbc_int_t ival = atol(mrbc_string_cstr(&v[i]));
-	ret = mrbc_printf_int( &pf, ival, 10 );
-      }
-      break;
-
-    case 'b':
-    case 'B':
-      if( mrbc_type(v[i]) == MRBC_TT_INTEGER ) {
-	ret = mrbc_printf_bit( &pf, v[i].i, 1);
-      }
-      break;
-
-    case 'x':
-    case 'X':
-      if( mrbc_type(v[i]) == MRBC_TT_INTEGER ) {
-	ret = mrbc_printf_bit( &pf, v[i].i, 4);
-      }
-      break;
-
-    case 'o':
-      if( mrbc_type(v[i]) == MRBC_TT_INTEGER ) {
-	ret = mrbc_printf_bit( &pf, v[i].i, 3);
-      }
-      break;
-
-#if MRBC_USE_FLOAT
-    case 'f':
-    case 'e':
-    case 'E':
-    case 'g':
-    case 'G':
-      if( mrbc_type(v[i]) == MRBC_TT_FLOAT ) {
-	ret = mrbc_printf_float( &pf, v[i].d );
-      } else if( mrbc_type(v[i]) == MRBC_TT_INTEGER ) {
-	ret = mrbc_printf_float( &pf, v[i].i );
-      }
-      break;
-#endif
-
-    default:
-      break;
+      SET_RETURN(value);
     }
-    if( ret >= 0 ) {
-      i++;
-      continue;		// normal next loop.
-    }
-
-    // maybe buffer full. (ret == -1)
-    if( pf.fmt.width > BUF_INC_STEP ) buflen += pf.fmt.width;
-    pf = pf_bak;
-
-  INCREASE_BUFFER:
-    buflen += BUF_INC_STEP;
-    buf = mrbc_realloc(vm, pf.buf, buflen);
-    if( !buf ) { return; }	// ENOMEM raise? TODO: leak memory.
-    mrbc_printf_replace_buffer(&pf, buf, buflen);
   }
-  mrbc_printf_end( &pf );
-
-  buflen = mrbc_printf_len( &pf );
-  mrbc_realloc(vm, pf.buf, buflen+1);	// shrink suitable size.
-
-  mrbc_value value = mrbc_string_new_alloc( vm, pf.buf, buflen );
-
-  SET_RETURN(value);
 }
 
 
@@ -667,21 +702,22 @@ static void c_object_to_s(struct VM *vm, mrbc_value v[], int argc)
   char buf[64];
   char *s = buf;
   mrbc_sym sym_id = find_class_by_object(&v[0])->sym_id;
+  int bufsiz, n;
 
   if( v[0].tt != MRBC_TT_CLASS ) {
     buf[0] = '#'; buf[1] = '<';
     s = buf + 2;
   }
 
-  int bufsiz = sizeof(buf) - (s - buf);
-  int n = set_sym_name_by_id( s, bufsiz, sym_id );
+  bufsiz = sizeof(buf) - (s - buf);
+  n = set_sym_name_by_id( s, bufsiz, sym_id );
 
   if( v[0].tt != MRBC_TT_CLASS ) {
     mrbc_snprintf(s+n, bufsiz-n, ":%08x>", (uint32_t)
 #if defined(UINTPTR_MAX)
 	(uintptr_t)
 #endif
-	v->instance );
+	v->uni.instance );
   }
 
   SET_RETURN( mrbc_string_new_cstr( vm, buf ));
@@ -755,10 +791,11 @@ static void c_proc_new(struct VM *vm, mrbc_value v[], int argc)
 */
 static void c_proc_call(struct VM *vm, mrbc_value v[], int argc)
 {
+  mrbc_callinfo *callinfo_self, *callinfo;
   assert( mrbc_type(v[0]) == MRBC_TT_PROC );
 
-  mrbc_callinfo *callinfo_self = v[0].proc->callinfo_self;
-  mrbc_callinfo *callinfo = mrbc_push_callinfo(vm,
+  callinfo_self = v[0].uni.proc->callinfo_self;
+  callinfo = mrbc_push_callinfo(vm,
 				(callinfo_self ? callinfo_self->method_id : 0),
 				v - vm->cur_regs, argc);
   if( !callinfo ) return;
@@ -768,7 +805,7 @@ static void c_proc_call(struct VM *vm, mrbc_value v[], int argc)
   }
 
   // target irep
-  vm->cur_irep = v[0].proc->irep;
+  vm->cur_irep = v[0].uni.proc->irep;
   vm->inst = vm->cur_irep->inst;
   vm->cur_regs = v;
 }

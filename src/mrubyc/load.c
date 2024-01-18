@@ -346,7 +346,16 @@ void mrbc_irep_free(struct IREP *irep)
 mrbc_value mrbc_irep_pool_value(struct VM *vm, int n)
 {
   assert( vm->cur_irep->plen > n );
-  const uint8_t *p = mrbc_irep_pool_ptr(vm->cur_irep, n);
+  // Workaround: WDC816CCがpの上位8bitが常に0x00になる機械語を出力する。
+  // 左の項を一旦変数に入れると動く。
+  // adc	[<R0],Y
+	// sta	<L194+p2_4
+	// lda	#$0
+	// sta	<L194+p2_4+2
+  // const uint8_t *p = mrbc_irep_pool_ptr(vm->cur_irep, n);
+
+  const uint8_t *pool = vm->cur_irep->pool;
+  const uint8_t *p = pool + mrbc_irep_tbl_pools(vm->cur_irep)[(n)];
   mrbc_value obj;
 
   int tt = *p++;

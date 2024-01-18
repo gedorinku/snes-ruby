@@ -48,7 +48,7 @@ void mrbc_debug_dump_global(void);
   @param  sym_id	target symbol ID.
   @return int		result.
 */
-static inline int mrbc_is_nested_symid(mrbc_sym sym_id)
+static int mrbc_is_nested_symid(mrbc_sym sym_id)
 {
   const char *s = mrbc_symid_to_str(sym_id);
 

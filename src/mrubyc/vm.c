@@ -76,11 +76,11 @@ static void send_by_name( struct VM *vm, mrbc_sym sym_id, int a, int c )
     narg = mrbc_array_size(&argv);
     int i;
     for( i = 0; i < narg; i++ ) {
-      mrbc_incref( &argv.array->data[i] );
+      mrbc_incref( &argv.uni.array->data[i] );
     }
 
     memmove( recv + narg + 1, recv + 2, sizeof(mrbc_value) * (karg * 2 + 1) );
-    memcpy( recv + 1, argv.array->data, sizeof(mrbc_value) * narg );
+    memcpy( recv + 1, argv.uni.array->data, sizeof(mrbc_value) * narg );
 
     mrbc_decref(&argv);
   }
@@ -90,11 +90,11 @@ static void send_by_name( struct VM *vm, mrbc_sym sym_id, int a, int c )
     narg++;
     if( karg != CALL_MAXARGS ) {
       mrbc_value h = mrbc_hash_new( vm, karg );
-      if( !h.hash ) return;	// ENOMEM
+      if( !h.uni.hash ) return;	// ENOMEM
 
       mrbc_value *r1 = recv + narg;
-      memcpy( h.hash->data, r1, sizeof(mrbc_value) * karg * 2 );
-      h.hash->n_stored = karg * 2;
+      memcpy( h.uni.hash->data, r1, sizeof(mrbc_value) * karg * 2 );
+      h.uni.hash->n_stored = karg * 2;
 
       mrbc_value block = r1[karg * 2];
       memset( r1 + 2, 0, sizeof(mrbc_value) * (karg * 2 - 1) );
@@ -120,7 +120,7 @@ static void send_by_name( struct VM *vm, mrbc_sym sym_id, int a, int c )
 
   if( method.c_func ) {
     // call C method.
-    method.func(vm, recv, narg);
+    method.uni_func.func(vm, recv, narg);
     if( sym_id == MRBC_SYM(call) ) return;
     if( sym_id == MRBC_SYM(new) ) return;
 
@@ -132,9 +132,9 @@ static void send_by_name( struct VM *vm, mrbc_sym sym_id, int a, int c )
   } else {
     // call Ruby method.
     mrbc_callinfo *callinfo = mrbc_push_callinfo(vm, sym_id, a, narg);
-    callinfo->own_class = method.cls;
+    callinfo->own_class = method.uni_next.cls;
 
-    vm->cur_irep = method.irep;
+    vm->cur_irep = method.uni_func.irep;
     vm->inst = vm->cur_irep->inst;
     vm->cur_regs = recv;
   }
@@ -175,7 +175,7 @@ static mrbc_value * mrbc_get_self( struct VM *vm, mrbc_value *regs )
 {
   mrbc_value *self = &regs[0];
   if( mrbc_type(*self) == MRBC_TT_PROC ) {
-    mrbc_callinfo *callinfo = regs[0].proc->callinfo_self;
+    mrbc_callinfo *callinfo = regs[0].uni.proc->callinfo_self;
     if( callinfo ) {
       self = callinfo->cur_regs + callinfo->reg_offset;
     } else {
@@ -387,7 +387,7 @@ void mrbc_vm_begin( struct VM *vm )
 
   // set self to reg[0], others nil
   vm->regs[0] = mrbc_instance_new(vm, mrbc_class_object, 0);
-  if( vm->regs[0].instance == NULL ) return;	// ENOMEM
+  if( vm->regs[0].uni.instance == NULL ) return;	// ENOMEM
   int i;
   for( i = 1; i < vm->regs_size; i++ ) {
     vm->regs[i] = mrbc_nil_value();
@@ -443,7 +443,7 @@ void mrbc_vm_end( struct VM *vm )
 
   No operation
 */
-static inline void op_nop( mrbc_vm *vm, mrbc_value *regs EXT )
+static void op_nop( mrbc_vm *vm, mrbc_value *regs EXT )
 {
   FETCH_Z();
 }
@@ -454,7 +454,7 @@ static inline void op_nop( mrbc_vm *vm, mrbc_value *regs EXT )
 
   R[a] = R[b]
 */
-static inline void op_move( mrbc_vm *vm, mrbc_value *regs EXT )
+static void op_move( mrbc_vm *vm, mrbc_value *regs EXT )
 {
   FETCH_BB();
 
@@ -469,7 +469,7 @@ static inline void op_move( mrbc_vm *vm, mrbc_value *regs EXT )
 
   R[a] = Pool[b]
 */
-static inline void op_loadl( mrbc_vm *vm, mrbc_value *regs EXT )
+static void op_loadl( mrbc_vm *vm, mrbc_value *regs EXT )
 {
   FETCH_BB();
 
@@ -483,7 +483,7 @@ static inline void op_loadl( mrbc_vm *vm, mrbc_value *regs EXT )
 
   R[a] = mrb_int(b)
 */
-static inline void op_loadi( mrbc_vm *vm, mrbc_value *regs EXT )
+static void op_loadi( mrbc_vm *vm, mrbc_value *regs EXT )
 {
   FETCH_BB();
 
@@ -497,7 +497,7 @@ static inline void op_loadi( mrbc_vm *vm, mrbc_value *regs EXT )
 
   R[a] = mrb_int(-b)
 */
-static inline void op_loadineg( mrbc_vm *vm, mrbc_value *regs EXT )
+static void op_loadineg( mrbc_vm *vm, mrbc_value *regs EXT )
 {
   FETCH_BB();
 
@@ -511,7 +511,7 @@ static inline void op_loadineg( mrbc_vm *vm, mrbc_value *regs EXT )
 
   R[a] = mrb_int(n)
 */
-static inline void op_loadi_n( mrbc_vm *vm, mrbc_value *regs EXT )
+static void op_loadi_n( mrbc_vm *vm, mrbc_value *regs EXT )
 {
   // get n
   int opcode = vm->inst[-1];
@@ -529,7 +529,7 @@ static inline void op_loadi_n( mrbc_vm *vm, mrbc_value *regs EXT )
 
   R[a] = mrb_int(b)
 */
-static inline void op_loadi16( mrbc_vm *vm, mrbc_value *regs EXT )
+static void op_loadi16( mrbc_vm *vm, mrbc_value *regs EXT )
 {
   FETCH_BS();
 
@@ -544,7 +544,7 @@ static inline void op_loadi16( mrbc_vm *vm, mrbc_value *regs EXT )
 
   R[a] = mrb_int((b<<16)+c)
 */
-static inline void op_loadi32( mrbc_vm *vm, mrbc_value *regs EXT )
+static void op_loadi32( mrbc_vm *vm, mrbc_value *regs EXT )
 {
   FETCH_BSS();
 
@@ -558,7 +558,7 @@ static inline void op_loadi32( mrbc_vm *vm, mrbc_value *regs EXT )
 
   R[a] = Syms[b]
 */
-static inline void op_loadsym( mrbc_vm *vm, mrbc_value *regs EXT )
+static void op_loadsym( mrbc_vm *vm, mrbc_value *regs EXT )
 {
   FETCH_BB();
 
@@ -572,7 +572,7 @@ static inline void op_loadsym( mrbc_vm *vm, mrbc_value *regs EXT )
 
   R[a] = nil
 */
-static inline void op_loadnil( mrbc_vm *vm, mrbc_value *regs EXT )
+static void op_loadnil( mrbc_vm *vm, mrbc_value *regs EXT )
 {
   FETCH_B();
 
@@ -586,7 +586,7 @@ static inline void op_loadnil( mrbc_vm *vm, mrbc_value *regs EXT )
 
   R[a] = self
 */
-static inline void op_loadself( mrbc_vm *vm, mrbc_value *regs EXT )
+static void op_loadself( mrbc_vm *vm, mrbc_value *regs EXT )
 {
   FETCH_B();
 
@@ -601,7 +601,7 @@ static inline void op_loadself( mrbc_vm *vm, mrbc_value *regs EXT )
 
   R[a] = true
 */
-static inline void op_loadt( mrbc_vm *vm, mrbc_value *regs EXT )
+static void op_loadt( mrbc_vm *vm, mrbc_value *regs EXT )
 {
   FETCH_B();
 
@@ -615,7 +615,7 @@ static inline void op_loadt( mrbc_vm *vm, mrbc_value *regs EXT )
 
   R[a] = false
 */
-static inline void op_loadf( mrbc_vm *vm, mrbc_value *regs EXT )
+static void op_loadf( mrbc_vm *vm, mrbc_value *regs EXT )
 {
   FETCH_B();
 
@@ -629,7 +629,7 @@ static inline void op_loadf( mrbc_vm *vm, mrbc_value *regs EXT )
 
   R[a] = getglobal(Syms[b])
 */
-static inline void op_getgv( mrbc_vm *vm, mrbc_value *regs EXT )
+static void op_getgv( mrbc_vm *vm, mrbc_value *regs EXT )
 {
   FETCH_BB();
 
@@ -649,7 +649,7 @@ static inline void op_getgv( mrbc_vm *vm, mrbc_value *regs EXT )
 
   setglobal(Syms[b], R[a])
 */
-static inline void op_setgv( mrbc_vm *vm, mrbc_value *regs EXT )
+static void op_setgv( mrbc_vm *vm, mrbc_value *regs EXT )
 {
   FETCH_BB();
 
@@ -663,7 +663,7 @@ static inline void op_setgv( mrbc_vm *vm, mrbc_value *regs EXT )
 
   R[a] = ivget(Syms[b])
 */
-static inline void op_getiv( mrbc_vm *vm, mrbc_value *regs EXT )
+static void op_getiv( mrbc_vm *vm, mrbc_value *regs EXT )
 {
   FETCH_BB();
 
@@ -685,7 +685,7 @@ static inline void op_getiv( mrbc_vm *vm, mrbc_value *regs EXT )
 
   ivset(Syms[b],R[a])
 */
-static inline void op_setiv( mrbc_vm *vm, mrbc_value *regs EXT )
+static void op_setiv( mrbc_vm *vm, mrbc_value *regs EXT )
 {
   FETCH_BB();
 
@@ -706,7 +706,7 @@ static inline void op_setiv( mrbc_vm *vm, mrbc_value *regs EXT )
 
   R[a] = constget(Syms[b])
 */
-static inline void op_getconst( mrbc_vm *vm, mrbc_value *regs EXT )
+static void op_getconst( mrbc_vm *vm, mrbc_value *regs EXT )
 {
   FETCH_BB();
 
@@ -747,7 +747,7 @@ static inline void op_getconst( mrbc_vm *vm, mrbc_value *regs EXT )
 
   constset(Syms[b],R[a])
 */
-static inline void op_setconst( mrbc_vm *vm, mrbc_value *regs EXT )
+static void op_setconst( mrbc_vm *vm, mrbc_value *regs EXT )
 {
   FETCH_BB();
 
@@ -755,7 +755,7 @@ static inline void op_setconst( mrbc_vm *vm, mrbc_value *regs EXT )
 
   mrbc_incref(&regs[a]);
   if( mrbc_type(regs[0]) == MRBC_TT_CLASS ) {
-    mrbc_set_class_const(regs[0].cls, sym_id, &regs[a]);
+    mrbc_set_class_const(regs[0].uni.cls, sym_id, &regs[a]);
   } else {
     mrbc_set_const(sym_id, &regs[a]);
   }
@@ -767,19 +767,19 @@ static inline void op_setconst( mrbc_vm *vm, mrbc_value *regs EXT )
 
   R[a] = R[a]::Syms[b]
 */
-static inline void op_getmcnst( mrbc_vm *vm, mrbc_value *regs EXT )
+static void op_getmcnst( mrbc_vm *vm, mrbc_value *regs EXT )
 {
   FETCH_BB();
 
   mrbc_sym sym_id = mrbc_irep_symbol_id(vm->cur_irep, b);
-  mrbc_class *cls = regs[a].cls;
+  mrbc_class *cls = regs[a].uni.cls;
   mrbc_value *v;
 
   while( !(v = mrbc_get_class_const(cls, sym_id)) ) {
     cls = cls->super;
     if( !cls ) {
       mrbc_raisef( vm, MRBC_CLASS(NameError), "uninitialized constant %s::%s",
-	mrbc_symid_to_str( regs[a].cls->sym_id ), mrbc_symid_to_str( sym_id ));
+	mrbc_symid_to_str( regs[a].uni.cls->sym_id ), mrbc_symid_to_str( sym_id ));
       return;
     }
   }
@@ -798,12 +798,12 @@ static inline void op_getmcnst( mrbc_vm *vm, mrbc_value *regs EXT )
   b: target offset of regs.
   c: nested block level.
 */
-static inline void op_getupvar( mrbc_vm *vm, mrbc_value *regs EXT )
+static void op_getupvar( mrbc_vm *vm, mrbc_value *regs EXT )
 {
   FETCH_BBB();
 
   assert( mrbc_type(regs[0]) == MRBC_TT_PROC );
-  mrbc_callinfo *callinfo = regs[0].proc->callinfo;
+  mrbc_callinfo *callinfo = regs[0].uni.proc->callinfo;
 
   int i;
   for( i = 0; i < c; i++ ) {
@@ -811,7 +811,7 @@ static inline void op_getupvar( mrbc_vm *vm, mrbc_value *regs EXT )
     mrbc_value *reg0 = callinfo->cur_regs + callinfo->reg_offset;
 
     if( mrbc_type(*reg0) != MRBC_TT_PROC ) break;	// What to do?
-    callinfo = reg0->proc->callinfo;
+    callinfo = reg0->uni.proc->callinfo;
   }
 
   mrbc_value *p_val;
@@ -832,19 +832,19 @@ static inline void op_getupvar( mrbc_vm *vm, mrbc_value *regs EXT )
 
   uvset(b,c,R[a])
 */
-static inline void op_setupvar( mrbc_vm *vm, mrbc_value *regs EXT )
+static void op_setupvar( mrbc_vm *vm, mrbc_value *regs EXT )
 {
   FETCH_BBB();
 
   assert( regs[0].tt == MRBC_TT_PROC );
-  mrbc_callinfo *callinfo = regs[0].proc->callinfo;
+  mrbc_callinfo *callinfo = regs[0].uni.proc->callinfo;
 
   int i;
   for( i = 0; i < c; i++ ) {
     assert( callinfo );
     mrbc_value *reg0 = callinfo->cur_regs + callinfo->reg_offset;
     assert( reg0->tt == MRBC_TT_PROC );
-    callinfo = reg0->proc->callinfo;
+    callinfo = reg0->uni.proc->callinfo;
   }
 
   mrbc_value *p_val;
@@ -865,7 +865,7 @@ static inline void op_setupvar( mrbc_vm *vm, mrbc_value *regs EXT )
 
   R[a] = R[a][R[a+1]]
 */
-static inline void op_getidx( mrbc_vm *vm, mrbc_value *regs EXT )
+static void op_getidx( mrbc_vm *vm, mrbc_value *regs EXT )
 {
   FETCH_B();
 
@@ -878,7 +878,7 @@ static inline void op_getidx( mrbc_vm *vm, mrbc_value *regs EXT )
 
   R[a][R[a+1]] = R[a+2]
 */
-static inline void op_setidx( mrbc_vm *vm, mrbc_value *regs EXT )
+static void op_setidx( mrbc_vm *vm, mrbc_value *regs EXT )
 {
   FETCH_B();
 
@@ -891,7 +891,7 @@ static inline void op_setidx( mrbc_vm *vm, mrbc_value *regs EXT )
 
   pc+=a
 */
-static inline void op_jmp( mrbc_vm *vm, mrbc_value *regs EXT )
+static void op_jmp( mrbc_vm *vm, mrbc_value *regs EXT )
 {
   FETCH_S();
 
@@ -904,7 +904,7 @@ static inline void op_jmp( mrbc_vm *vm, mrbc_value *regs EXT )
 
   if R[a] pc+=b
 */
-static inline void op_jmpif( mrbc_vm *vm, mrbc_value *regs EXT )
+static void op_jmpif( mrbc_vm *vm, mrbc_value *regs EXT )
 {
   FETCH_BS();
 
@@ -919,7 +919,7 @@ static inline void op_jmpif( mrbc_vm *vm, mrbc_value *regs EXT )
 
   if !R[a] pc+=b
 */
-static inline void op_jmpnot( mrbc_vm *vm, mrbc_value *regs EXT )
+static void op_jmpnot( mrbc_vm *vm, mrbc_value *regs EXT )
 {
   FETCH_BS();
 
@@ -934,7 +934,7 @@ static inline void op_jmpnot( mrbc_vm *vm, mrbc_value *regs EXT )
 
   if R[a]==nil pc+=b
 */
-static inline void op_jmpnil( mrbc_vm *vm, mrbc_value *regs EXT )
+static void op_jmpnil( mrbc_vm *vm, mrbc_value *regs EXT )
 {
   FETCH_BS();
 
@@ -949,7 +949,7 @@ static inline void op_jmpnil( mrbc_vm *vm, mrbc_value *regs EXT )
 
   unwind_and_jump_to(a)
 */
-static inline void op_jmpuw( mrbc_vm *vm, mrbc_value *regs EXT )
+static void op_jmpuw( mrbc_vm *vm, mrbc_value *regs EXT )
 {
   FETCH_S();
 
@@ -973,7 +973,7 @@ static inline void op_jmpuw( mrbc_vm *vm, mrbc_value *regs EXT )
   // jump point is outside, thus jump to ensure.
   assert( vm->exception.tt == MRBC_TT_NIL );
   vm->exception.tt = MRBC_TT_JMPUW;
-  vm->exception.handle = (void*)jump_inst;
+  vm->exception.uni.handle = (void*)jump_inst;
   vm->inst = vm->cur_irep->inst + bin_to_uint32(handler->target);
 }
 
@@ -983,7 +983,7 @@ static inline void op_jmpuw( mrbc_vm *vm, mrbc_value *regs EXT )
 
   R[a] = exc
 */
-static inline void op_except( mrbc_vm *vm, mrbc_value *regs EXT )
+static void op_except( mrbc_vm *vm, mrbc_value *regs EXT )
 {
   FETCH_B();
 
@@ -998,14 +998,14 @@ static inline void op_except( mrbc_vm *vm, mrbc_value *regs EXT )
 
   R[b] = R[a].isa?(R[b])
 */
-static inline void op_rescue( mrbc_vm *vm, mrbc_value *regs EXT )
+static void op_rescue( mrbc_vm *vm, mrbc_value *regs EXT )
 {
   FETCH_BB();
 
   assert( regs[a].tt == MRBC_TT_EXCEPTION );
   assert( regs[b].tt == MRBC_TT_CLASS );
 
-  int res = mrbc_obj_is_kind_of( &regs[a], regs[b].cls );
+  int res = mrbc_obj_is_kind_of( &regs[a], regs[b].uni.cls );
   mrbc_set_bool( &regs[b], res );
 }
 
@@ -1015,7 +1015,7 @@ static inline void op_rescue( mrbc_vm *vm, mrbc_value *regs EXT )
 
   raise(R[a]) if R[a]
 */
-static inline void op_raiseif( mrbc_vm *vm, mrbc_value *regs EXT )
+static void op_raiseif( mrbc_vm *vm, mrbc_value *regs EXT )
 {
   FETCH_B();
 
@@ -1079,7 +1079,9 @@ CASE_OP_RETURN_BLK:
 
   // top level return ?
   if( vm->callinfo_tail == NULL ) {
-    mrbc_decref(&(mrbc_value){.tt = MRBC_TT_PROC, .proc = vm->ret_blk});
+    mrbc_value decv = {.tt = MRBC_TT_PROC};
+    decv.uni.proc = vm->ret_blk;
+    mrbc_decref(&decv);
     vm->ret_blk = 0;
 
     vm->flag_preemption = 1;
@@ -1092,7 +1094,9 @@ CASE_OP_RETURN_BLK:
   mrbc_decref(reg0);
   *reg0 = vm->ret_blk->ret_val;
 
-  mrbc_decref(&(mrbc_value){.tt = MRBC_TT_PROC, .proc = vm->ret_blk});
+  mrbc_value decv = {.tt = MRBC_TT_PROC};
+  decv.uni.proc = vm->ret_blk;
+  mrbc_decref(&decv);
   vm->ret_blk = 0;
 
   mrbc_pop_callinfo(vm);
@@ -1123,7 +1127,9 @@ CASE_OP_BREAK: {
   mrbc_decref(reg0);
   *reg0 = vm->ret_blk->ret_val;
 
-  mrbc_decref(&(mrbc_value){.tt = MRBC_TT_PROC, .proc = vm->ret_blk});
+  mrbc_value decv = {.tt = MRBC_TT_PROC};
+  decv.uni.proc = vm->ret_blk;
+  mrbc_decref(&decv);
   vm->ret_blk = 0;
   return;
 }
@@ -1134,15 +1140,15 @@ CASE_OP_JMPUW:
   // find ensure that still needs to be executed.
   const mrbc_irep_catch_handler *handler = find_catch_handler_ensure(vm);
   if( !handler ) {
-    vm->inst = ra.handle;
+    vm->inst = ra.uni.handle;
     return;
   }
 
   // check whether the jump point is inside or outside the catch handler.
-  uint32_t jump_point = (uint8_t *)ra.handle - vm->cur_irep->inst;
+  uint32_t jump_point = (uint8_t *)ra.uni.handle - vm->cur_irep->inst;
   if( (bin_to_uint32(handler->begin) < jump_point) &&
       (jump_point <= bin_to_uint32(handler->end)) ) {
-    vm->inst = ra.handle;
+    vm->inst = ra.uni.handle;
     return;
   }
 
@@ -1168,7 +1174,7 @@ CASE_OP_EXCEPTION:
 
   R[a] = self.send(Syms[b],R[a+1]..,R[a+n+1]:R[a+n+2]..) (c=n|k<<4)
 */
-static inline void op_ssend( mrbc_vm *vm, mrbc_value *regs EXT )
+static void op_ssend( mrbc_vm *vm, mrbc_value *regs EXT )
 {
   FETCH_BBB();
 
@@ -1186,7 +1192,7 @@ static inline void op_ssend( mrbc_vm *vm, mrbc_value *regs EXT )
 
   R[a] = self.send(Syms[b],R[a+1]..,R[a+n+1]:R[a+n+2]..,&R[a+n+2k+1])
 */
-static inline void op_ssendb( mrbc_vm *vm, mrbc_value *regs EXT )
+static void op_ssendb( mrbc_vm *vm, mrbc_value *regs EXT )
 {
   FETCH_BBB();
 
@@ -1204,7 +1210,7 @@ static inline void op_ssendb( mrbc_vm *vm, mrbc_value *regs EXT )
 
   R[a] = R[a].send(Syms[b],R[a+1]..,R[a+n+1]:R[a+n+2]..) (c=n|k<<4)
 */
-static inline void op_send( mrbc_vm *vm, mrbc_value *regs EXT )
+static void op_send( mrbc_vm *vm, mrbc_value *regs EXT )
 {
   FETCH_BBB();
 
@@ -1217,7 +1223,7 @@ static inline void op_send( mrbc_vm *vm, mrbc_value *regs EXT )
 
   R[a] = R[a].send(Syms[b],R[a+1]..,R[a+n+1]:R[a+n+2]..,&R[a+n+2k+1])
 */
-static inline void op_sendb( mrbc_vm *vm, mrbc_value *regs EXT )
+static void op_sendb( mrbc_vm *vm, mrbc_value *regs EXT )
 {
   FETCH_BBB();
 
@@ -1230,7 +1236,7 @@ static inline void op_sendb( mrbc_vm *vm, mrbc_value *regs EXT )
 
   R[a] = super(R[a+1],... ,R[a+b+1])
 */
-static inline void op_super( mrbc_vm *vm, mrbc_value *regs EXT )
+static void op_super( mrbc_vm *vm, mrbc_value *regs EXT )
 {
   FETCH_BB();
 
@@ -1261,7 +1267,7 @@ static inline void op_super( mrbc_vm *vm, mrbc_value *regs EXT )
     int i, j;
     for( i = 0, j = a+1; i < argc; i++, j++ ) {
       mrbc_decref( &regs[j] );
-      regs[j] = argary.array->data[i];
+      regs[j] = argary.uni.array->data[i];
     }
     mrbc_array_delete_handle(&argary);
 
@@ -1292,10 +1298,10 @@ static inline void op_super( mrbc_vm *vm, mrbc_value *regs EXT )
   }
 
   callinfo = mrbc_push_callinfo(vm, callinfo->method_id, a, b);
-  callinfo->own_class = method.cls;
+  callinfo->own_class = method.uni_next.cls;
   callinfo->is_called_super = 1;
 
-  vm->cur_irep = method.irep;
+  vm->cur_irep = method.uni_func.irep;
   vm->inst = vm->cur_irep->inst;
   vm->cur_regs += a;
 }
@@ -1308,7 +1314,7 @@ static inline void op_super( mrbc_vm *vm, mrbc_value *regs EXT )
 
   flags: mmmm_mrmm_mmmd_llll
 */
-static inline void op_argary( mrbc_vm *vm, mrbc_value *regs EXT )
+static void op_argary( mrbc_vm *vm, mrbc_value *regs EXT )
 {
   FETCH_BS();
 
@@ -1331,14 +1337,14 @@ static inline void op_argary( mrbc_vm *vm, mrbc_value *regs EXT )
   // rewind proc nest
   if( lv ) {
     assert( mrbc_type(*reg0) == MRBC_TT_PROC );
-    mrbc_callinfo *callinfo = reg0->proc->callinfo;
+    mrbc_callinfo *callinfo = reg0->uni.proc->callinfo;
     assert( callinfo );
 
     int i;
     for( i = 1; i < lv; i ++ ) {
       reg0 = callinfo->cur_regs + callinfo->reg_offset;
       assert( mrbc_type(*reg0) == MRBC_TT_PROC );
-      callinfo = reg0->proc->callinfo;
+      callinfo = reg0->uni.proc->callinfo;
       assert( callinfo );
     }
 
@@ -1348,7 +1354,7 @@ static inline void op_argary( mrbc_vm *vm, mrbc_value *regs EXT )
   // create arguent array.
   int array_size = m1 + d;
   mrbc_value val = mrbc_array_new( vm, array_size );
-  if( !val.array ) return;	// ENOMEM
+  if( !val.uni.array ) return;	// ENOMEM
 
   int i;
   for( i = 0; i < array_size; i++ ) {
@@ -1373,7 +1379,7 @@ static inline void op_argary( mrbc_vm *vm, mrbc_value *regs EXT )
 
   flags: 0mmm_mmoo_ooor_mmmm_mkkk_kkdb
 */
-static inline void op_enter( mrbc_vm *vm, mrbc_value *regs EXT )
+static void op_enter( mrbc_vm *vm, mrbc_value *regs EXT )
 {
 #define FLAG_REST	0x1000
 #define FLAG_M2		0x0f80
@@ -1423,7 +1429,7 @@ static inline void op_enter( mrbc_vm *vm, mrbc_value *regs EXT )
     for( i = 0; i < argc; i++ ) {
       mrbc_decref( &regs[i+1] );
       if( mrbc_array_size(&argary) > i ) {
-	regs[i+1] = argary.array->data[i];
+	regs[i+1] = argary.uni.array->data[i];
       } else {
 	mrbc_set_nil( &regs[i+1] );
       }
@@ -1448,7 +1454,7 @@ static inline void op_enter( mrbc_vm *vm, mrbc_value *regs EXT )
       int rest_size = argc - m1 - o;
       if( rest_size < 0 ) rest_size = 0;
       rest = mrbc_array_new(vm, rest_size);
-      if( !rest.array ) return;	// ENOMEM
+      if( !rest.uni.array ) return;	// ENOMEM
 
       int rest_reg = m1 + o + 1;
       int i;
@@ -1518,7 +1524,7 @@ static inline void op_enter( mrbc_vm *vm, mrbc_value *regs EXT )
 
   R[a] = kdict.key?(Syms[b])
 */
-static inline void op_key_p( mrbc_vm *vm, mrbc_value *regs EXT )
+static void op_key_p( mrbc_vm *vm, mrbc_value *regs EXT )
 {
   FETCH_BB();
 
@@ -1536,7 +1542,7 @@ static inline void op_key_p( mrbc_vm *vm, mrbc_value *regs EXT )
 
   raise unless kdict.empty?
 */
-static inline void op_keyend( mrbc_vm *vm, mrbc_value *regs EXT )
+static void op_keyend( mrbc_vm *vm, mrbc_value *regs EXT )
 {
   FETCH_Z();
 
@@ -1547,7 +1553,7 @@ static inline void op_keyend( mrbc_vm *vm, mrbc_value *regs EXT )
     mrbc_value *kv = mrbc_hash_i_next(&ite);
 
     mrbc_raisef(vm, MRBC_CLASS(ArgumentError), "unknown keyword: %s",
-		mrbc_symid_to_str(kv->i));
+		mrbc_symid_to_str(kv->uni.i));
   }
 }
 
@@ -1557,7 +1563,7 @@ static inline void op_keyend( mrbc_vm *vm, mrbc_value *regs EXT )
 
   R[a] = kdict[Syms[b]]; kdict.delete(Syms[b])
 */
-static inline void op_karg( mrbc_vm *vm, mrbc_value *regs EXT )
+static void op_karg( mrbc_vm *vm, mrbc_value *regs EXT )
 {
   FETCH_BB();
 
@@ -1579,7 +1585,7 @@ static inline void op_karg( mrbc_vm *vm, mrbc_value *regs EXT )
 //================================================================
 /*! op_return, op_return_blk subroutine.
 */
-static inline void op_return__sub( mrbc_vm *vm, mrbc_value *regs, int a )
+static void op_return__sub( mrbc_vm *vm, mrbc_value *regs, int a )
 {
   // If have a ensure, jump to it.
   if( vm->cur_irep->clen ) {
@@ -1627,7 +1633,7 @@ static inline void op_return__sub( mrbc_vm *vm, mrbc_value *regs, int a )
 
   return R[a] (normal)
 */
-static inline void op_return( mrbc_vm *vm, mrbc_value *regs EXT )
+static void op_return( mrbc_vm *vm, mrbc_value *regs EXT )
 {
   FETCH_B();
 
@@ -1640,7 +1646,7 @@ static inline void op_return( mrbc_vm *vm, mrbc_value *regs EXT )
 
   return R[a] (in-block return)
 */
-static inline void op_return_blk( mrbc_vm *vm, mrbc_value *regs EXT )
+static void op_return_blk( mrbc_vm *vm, mrbc_value *regs EXT )
 {
   FETCH_B();
 
@@ -1651,7 +1657,7 @@ static inline void op_return_blk( mrbc_vm *vm, mrbc_value *regs EXT )
 
   // Save the return value in the proc object.
   mrbc_incref( &regs[0] );
-  vm->ret_blk = regs[0].proc;
+  vm->ret_blk = regs[0].uni.proc;
   vm->ret_blk->ret_val = regs[a];
   regs[a].tt = MRBC_TT_EMPTY;
 
@@ -1684,7 +1690,9 @@ static inline void op_return_blk( mrbc_vm *vm, mrbc_value *regs EXT )
     mrbc_pop_callinfo(vm);
   }
 
-  mrbc_decref(&(mrbc_value){.tt = MRBC_TT_PROC, .proc = vm->ret_blk});
+  mrbc_value decv = {.tt = MRBC_TT_PROC};
+  decv.uni.proc = vm->ret_blk;
+  mrbc_decref(&decv);
   vm->ret_blk = 0;
 }
 
@@ -1694,7 +1702,7 @@ static inline void op_return_blk( mrbc_vm *vm, mrbc_value *regs EXT )
 
   break R[a]
 */
-static inline void op_break( mrbc_vm *vm, mrbc_value *regs EXT )
+static void op_break( mrbc_vm *vm, mrbc_value *regs EXT )
 {
   FETCH_B();
 
@@ -1702,7 +1710,7 @@ static inline void op_break( mrbc_vm *vm, mrbc_value *regs EXT )
 
   // Save the return value in the proc object.
   mrbc_incref( &regs[0] );
-  vm->ret_blk = regs[0].proc;
+  vm->ret_blk = regs[0].uni.proc;
   vm->ret_blk->ret_val = regs[a];
   regs[a].tt = MRBC_TT_EMPTY;
 
@@ -1730,7 +1738,9 @@ static inline void op_break( mrbc_vm *vm, mrbc_value *regs EXT )
   mrbc_decref(reg0);
   *reg0 = vm->ret_blk->ret_val;
 
-  mrbc_decref(&(mrbc_value){.tt = MRBC_TT_PROC, .proc = vm->ret_blk});
+  mrbc_value decv = {.tt = MRBC_TT_PROC};
+  decv.uni.proc = vm->ret_blk;
+  mrbc_decref(&decv);
   vm->ret_blk = 0;
 }
 
@@ -1740,7 +1750,7 @@ static inline void op_break( mrbc_vm *vm, mrbc_value *regs EXT )
 
   R[a] = block (16=m5:r1:m5:d1:lv4)
 */
-static inline void op_blkpush( mrbc_vm *vm, mrbc_value *regs EXT )
+static void op_blkpush( mrbc_vm *vm, mrbc_value *regs EXT )
 {
   FETCH_BS();
 
@@ -1765,7 +1775,7 @@ static inline void op_blkpush( mrbc_vm *vm, mrbc_value *regs EXT )
     // upper env
     assert( regs[0].tt == MRBC_TT_PROC );
 
-    mrbc_callinfo *callinfo = regs[0].proc->callinfo_self;
+    mrbc_callinfo *callinfo = regs[0].uni.proc->callinfo_self;
     blk = callinfo->cur_regs + callinfo->reg_offset + offset;
   }
   if( blk->tt != MRBC_TT_PROC ) {
@@ -1784,25 +1794,25 @@ static inline void op_blkpush( mrbc_vm *vm, mrbc_value *regs EXT )
 
   R[a] = R[a]+R[a+1]
 */
-static inline void op_add( mrbc_vm *vm, mrbc_value *regs EXT )
+static void op_add( mrbc_vm *vm, mrbc_value *regs EXT )
 {
   FETCH_B();
 
   if( regs[a].tt == MRBC_TT_INTEGER ) {
     if( regs[a+1].tt == MRBC_TT_INTEGER ) {     // in case of Integer, Integer
-      regs[a].i += regs[a+1].i;
+      regs[a].uni.i += regs[a+1].uni.i;
       return;
     }
 #if MRBC_USE_FLOAT
     if( regs[a+1].tt == MRBC_TT_FLOAT ) {      // in case of Integer, Float
       regs[a].tt = MRBC_TT_FLOAT;
-      regs[a].d = regs[a].i + regs[a+1].d;
+      regs[a].d = regs[a].uni.i + regs[a+1].d;
       return;
     }
   }
   if( regs[a].tt == MRBC_TT_FLOAT ) {
     if( regs[a+1].tt == MRBC_TT_INTEGER ) {     // in case of Float, Integer
-      regs[a].d += regs[a+1].i;
+      regs[a].d += regs[a+1].uni.i;
       return;
     }
     if( regs[a+1].tt == MRBC_TT_FLOAT ) {      // in case of Float, Float
@@ -1822,12 +1832,12 @@ static inline void op_add( mrbc_vm *vm, mrbc_value *regs EXT )
 
   R[a] = R[a]+mrb_int(b)
 */
-static inline void op_addi( mrbc_vm *vm, mrbc_value *regs EXT )
+static void op_addi( mrbc_vm *vm, mrbc_value *regs EXT )
 {
   FETCH_BB();
 
   if( regs[a].tt == MRBC_TT_INTEGER ) {
-    regs[a].i += b;
+    regs[a].uni.i += b;
     return;
   }
 
@@ -1847,25 +1857,25 @@ static inline void op_addi( mrbc_vm *vm, mrbc_value *regs EXT )
 
   R[a] = R[a]-R[a+1]
 */
-static inline void op_sub( mrbc_vm *vm, mrbc_value *regs EXT )
+static void op_sub( mrbc_vm *vm, mrbc_value *regs EXT )
 {
   FETCH_B();
 
   if( regs[a].tt == MRBC_TT_INTEGER ) {
     if( regs[a+1].tt == MRBC_TT_INTEGER ) {     // in case of Integer, Integer
-      regs[a].i -= regs[a+1].i;
+      regs[a].uni.i -= regs[a+1].uni.i;
       return;
     }
 #if MRBC_USE_FLOAT
     if( regs[a+1].tt == MRBC_TT_FLOAT ) {      // in case of Integer, Float
       regs[a].tt = MRBC_TT_FLOAT;
-      regs[a].d = regs[a].i - regs[a+1].d;
+      regs[a].d = regs[a].uni.i - regs[a+1].d;
       return;
     }
   }
   if( regs[a].tt == MRBC_TT_FLOAT ) {
     if( regs[a+1].tt == MRBC_TT_INTEGER ) {     // in case of Float, Integer
-      regs[a].d -= regs[a+1].i;
+      regs[a].d -= regs[a+1].uni.i;
       return;
     }
     if( regs[a+1].tt == MRBC_TT_FLOAT ) {      // in case of Float, Float
@@ -1885,12 +1895,12 @@ static inline void op_sub( mrbc_vm *vm, mrbc_value *regs EXT )
 
   R[a] = R[a]-mrb_int(b)
 */
-static inline void op_subi( mrbc_vm *vm, mrbc_value *regs EXT )
+static void op_subi( mrbc_vm *vm, mrbc_value *regs EXT )
 {
   FETCH_BB();
 
   if( regs[a].tt == MRBC_TT_INTEGER ) {
-    regs[a].i -= b;
+    regs[a].uni.i -= b;
     return;
   }
 
@@ -1910,25 +1920,25 @@ static inline void op_subi( mrbc_vm *vm, mrbc_value *regs EXT )
 
   R[a] = R[a]*R[a+1]
 */
-static inline void op_mul( mrbc_vm *vm, mrbc_value *regs EXT )
+static void op_mul( mrbc_vm *vm, mrbc_value *regs EXT )
 {
   FETCH_B();
 
   if( regs[a].tt == MRBC_TT_INTEGER ) {
     if( regs[a+1].tt == MRBC_TT_INTEGER ) {     // in case of Integer, Integer
-      regs[a].i *= regs[a+1].i;
+      regs[a].uni.i *= regs[a+1].uni.i;
       return;
     }
 #if MRBC_USE_FLOAT
     if( regs[a+1].tt == MRBC_TT_FLOAT ) {      // in case of Integer, Float
       regs[a].tt = MRBC_TT_FLOAT;
-      regs[a].d = regs[a].i * regs[a+1].d;
+      regs[a].d = regs[a].uni.i * regs[a+1].d;
       return;
     }
   }
   if( regs[a].tt == MRBC_TT_FLOAT ) {
     if( regs[a+1].tt == MRBC_TT_INTEGER ) {     // in case of Float, Integer
-      regs[a].d *= regs[a+1].i;
+      regs[a].d *= regs[a+1].uni.i;
       return;
     }
     if( regs[a+1].tt == MRBC_TT_FLOAT ) {      // in case of Float, Float
@@ -1948,29 +1958,29 @@ static inline void op_mul( mrbc_vm *vm, mrbc_value *regs EXT )
 
   R[a] = R[a]/R[a+1]
 */
-static inline void op_div( mrbc_vm *vm, mrbc_value *regs EXT )
+static void op_div( mrbc_vm *vm, mrbc_value *regs EXT )
 {
   FETCH_B();
 
   if( regs[a].tt == MRBC_TT_INTEGER ) {
     if( regs[a+1].tt == MRBC_TT_INTEGER ) {     // in case of Integer, Integer
-      if( regs[a+1].i == 0 ) {
+      if( regs[a+1].uni.i == 0 ) {
 	mrbc_raise(vm, MRBC_CLASS(ZeroDivisionError), 0 );
       } else {
-	regs[a].i /= regs[a+1].i;
+	regs[a].uni.i /= regs[a+1].uni.i;
       }
       return;
     }
 #if MRBC_USE_FLOAT
     if( regs[a+1].tt == MRBC_TT_FLOAT ) {      // in case of Integer, Float
       regs[a].tt = MRBC_TT_FLOAT;
-      regs[a].d = regs[a].i / regs[a+1].d;
+      regs[a].d = regs[a].uni.i / regs[a+1].d;
       return;
     }
   }
   if( regs[a].tt == MRBC_TT_FLOAT ) {
     if( regs[a+1].tt == MRBC_TT_INTEGER ) {     // in case of Float, Integer
-      regs[a].d /= regs[a+1].i;
+      regs[a].d /= regs[a+1].uni.i;
       return;
     }
     if( regs[a+1].tt == MRBC_TT_FLOAT ) {      // in case of Float, Float
@@ -1990,7 +2000,7 @@ static inline void op_div( mrbc_vm *vm, mrbc_value *regs EXT )
 
   R[a] = R[a]==R[a+1]
 */
-static inline void op_eq( mrbc_vm *vm, mrbc_value *regs EXT )
+static void op_eq( mrbc_vm *vm, mrbc_value *regs EXT )
 {
   FETCH_B();
 
@@ -2011,7 +2021,7 @@ static inline void op_eq( mrbc_vm *vm, mrbc_value *regs EXT )
 
   R[a] = R[a]<R[a+1]
 */
-static inline void op_lt( mrbc_vm *vm, mrbc_value *regs EXT )
+static void op_lt( mrbc_vm *vm, mrbc_value *regs EXT )
 {
   FETCH_B();
 
@@ -2032,7 +2042,7 @@ static inline void op_lt( mrbc_vm *vm, mrbc_value *regs EXT )
 
   R[a] = R[a]<=R[a+1]
 */
-static inline void op_le( mrbc_vm *vm, mrbc_value *regs EXT )
+static void op_le( mrbc_vm *vm, mrbc_value *regs EXT )
 {
   FETCH_B();
 
@@ -2053,7 +2063,7 @@ static inline void op_le( mrbc_vm *vm, mrbc_value *regs EXT )
 
   R[a] = R[a]>R[a+1]
 */
-static inline void op_gt( mrbc_vm *vm, mrbc_value *regs EXT )
+static void op_gt( mrbc_vm *vm, mrbc_value *regs EXT )
 {
   FETCH_B();
 
@@ -2074,7 +2084,7 @@ static inline void op_gt( mrbc_vm *vm, mrbc_value *regs EXT )
 
   R[a] = R[a]>=R[a+1]
 */
-static inline void op_ge( mrbc_vm *vm, mrbc_value *regs EXT )
+static void op_ge( mrbc_vm *vm, mrbc_value *regs EXT )
 {
   FETCH_B();
 
@@ -2095,16 +2105,16 @@ static inline void op_ge( mrbc_vm *vm, mrbc_value *regs EXT )
 
   R[a] = ary_new(R[a],R[a+1]..R[a+b])
 */
-static inline void op_array( mrbc_vm *vm, mrbc_value *regs EXT )
+static void op_array( mrbc_vm *vm, mrbc_value *regs EXT )
 {
   FETCH_BB();
 
   mrbc_value value = mrbc_array_new(vm, b);
-  if( value.array == NULL ) return;  // ENOMEM
+  if( value.uni.array == NULL ) return;  // ENOMEM
 
-  memcpy( value.array->data, &regs[a], sizeof(mrbc_value) * b );
+  memcpy( value.uni.array->data, &regs[a], sizeof(mrbc_value) * b );
   memset( &regs[a], 0, sizeof(mrbc_value) * b );
-  value.array->n_stored = b;
+  value.uni.array->n_stored = b;
 
   mrbc_decref(&regs[a]);
   regs[a] = value;
@@ -2116,19 +2126,19 @@ static inline void op_array( mrbc_vm *vm, mrbc_value *regs EXT )
 
   R[a] = ary_new(R[b],R[b+1]..R[b+c])
 */
-static inline void op_array2( mrbc_vm *vm, mrbc_value *regs EXT )
+static void op_array2( mrbc_vm *vm, mrbc_value *regs EXT )
 {
   FETCH_BBB();
 
   mrbc_value value = mrbc_array_new(vm, c);
-  if( value.array == NULL ) return;  // ENOMEM
+  if( value.uni.array == NULL ) return;  // ENOMEM
 
   int i;
   for( i = 0; i < c; i++ ) {
     mrbc_incref( &regs[b+i] );
-    value.array->data[i] = regs[b+i];
+    value.uni.array->data[i] = regs[b+i];
   }
-  value.array->n_stored = c;
+  value.uni.array->n_stored = c;
 
   mrbc_decref(&regs[a]);
   regs[a] = value;
@@ -2140,7 +2150,7 @@ static inline void op_array2( mrbc_vm *vm, mrbc_value *regs EXT )
 
   ary_cat(R[a],R[a+1])
 */
-static inline void op_arycat( mrbc_vm *vm, mrbc_value *regs EXT )
+static void op_arycat( mrbc_vm *vm, mrbc_value *regs EXT )
 {
   FETCH_B();
 
@@ -2156,21 +2166,21 @@ static inline void op_arycat( mrbc_vm *vm, mrbc_value *regs EXT )
   assert( regs[a  ].tt == MRBC_TT_ARRAY );
   assert( regs[a+1].tt == MRBC_TT_ARRAY );
 
-  int size_1 = regs[a  ].array->n_stored;
-  int size_2 = regs[a+1].array->n_stored;
-  int new_size = size_1 + regs[a+1].array->n_stored;
+  int size_1 = regs[a  ].uni.array->n_stored;
+  int size_2 = regs[a+1].uni.array->n_stored;
+  int new_size = size_1 + regs[a+1].uni.array->n_stored;
 
   // need resize?
-  if( regs[a].array->data_size < new_size ) {
+  if( regs[a].uni.array->data_size < new_size ) {
     mrbc_array_resize(&regs[a], new_size);
   }
 
   int i;
   for( i = 0; i < size_2; i++ ) {
-    mrbc_incref( &regs[a+1].array->data[i] );
-    regs[a].array->data[size_1+i] = regs[a+1].array->data[i];
+    mrbc_incref( &regs[a+1].uni.array->data[i] );
+    regs[a].uni.array->data[size_1+i] = regs[a+1].uni.array->data[i];
   }
-  regs[a].array->n_stored = new_size;
+  regs[a].uni.array->n_stored = new_size;
 }
 
 
@@ -2179,7 +2189,7 @@ static inline void op_arycat( mrbc_vm *vm, mrbc_value *regs EXT )
 
   ary_push(R[a],R[a+1]..R[a+b])
 */
-static inline void op_arypush( mrbc_vm *vm, mrbc_value *regs EXT )
+static void op_arypush( mrbc_vm *vm, mrbc_value *regs EXT )
 {
   FETCH_BB();
 
@@ -2189,9 +2199,9 @@ static inline void op_arypush( mrbc_vm *vm, mrbc_value *regs EXT )
   if( ret != 0 ) return;	// ENOMEM ?
 
   // data copy.
-  memcpy( regs[a].array->data + sz1, &regs[a+1], sizeof(mrbc_value) * b );
+  memcpy( regs[a].uni.array->data + sz1, &regs[a+1], sizeof(mrbc_value) * b );
   memset( &regs[a+1], 0, sizeof(mrbc_value) * b );
-  regs[a].array->n_stored = sz1 + b;
+  regs[a].uni.array->n_stored = sz1 + b;
 }
 
 
@@ -2200,7 +2210,7 @@ static inline void op_arypush( mrbc_vm *vm, mrbc_value *regs EXT )
 
   R[a] = ary_dup(R[a])
 */
-static inline void op_arydup( mrbc_vm *vm, mrbc_value *regs EXT )
+static void op_arydup( mrbc_vm *vm, mrbc_value *regs EXT )
 {
   FETCH_B();
 
@@ -2215,7 +2225,7 @@ static inline void op_arydup( mrbc_vm *vm, mrbc_value *regs EXT )
 
   R[a] = R[b][c]
 */
-static inline void op_aref( mrbc_vm *vm, mrbc_value *regs EXT )
+static void op_aref( mrbc_vm *vm, mrbc_value *regs EXT )
 {
   FETCH_BBB();
 
@@ -2245,7 +2255,7 @@ static inline void op_aref( mrbc_vm *vm, mrbc_value *regs EXT )
 
   R[b][c] = R[a]
 */
-static inline void op_aset( mrbc_vm *vm, mrbc_value *regs EXT )
+static void op_aset( mrbc_vm *vm, mrbc_value *regs EXT )
 {
   FETCH_BBB();
 
@@ -2261,15 +2271,15 @@ static inline void op_aset( mrbc_vm *vm, mrbc_value *regs EXT )
 
   *R[a],R[a+1]..R[a+c] = R[a][b..]
 */
-static inline void op_apost( mrbc_vm *vm, mrbc_value *regs EXT )
+static void op_apost( mrbc_vm *vm, mrbc_value *regs EXT )
 {
   FETCH_BBB();
 
   mrbc_value src = regs[a];
   if( mrbc_type(src) != MRBC_TT_ARRAY ) {
     src = mrbc_array_new(vm, 1);
-    src.array->data[0] = regs[a];
-    src.array->n_stored = 1;
+    src.uni.array->data[0] = regs[a];
+    src.uni.array->n_stored = 1;
   }
 
   int pre  = b;
@@ -2282,10 +2292,10 @@ static inline void op_apost( mrbc_vm *vm, mrbc_value *regs EXT )
     // copy elements
     int i;
     for( i = 0; i < ary_size; i++ ) {
-      regs[a].array->data[i] = src.array->data[pre+i];
-      mrbc_incref( &regs[a].array->data[i] );
+      regs[a].uni.array->data[i] = src.uni.array->data[pre+i];
+      mrbc_incref( &regs[a].uni.array->data[i] );
     }
-    regs[a].array->n_stored = ary_size;
+    regs[a].uni.array->n_stored = ary_size;
 
   } else {
     assert(!"Not support this case in op_apost.");
@@ -2302,13 +2312,13 @@ static inline void op_apost( mrbc_vm *vm, mrbc_value *regs EXT )
 
   R[a] = intern(R[a])
 */
-static inline void op_intern( mrbc_vm *vm, mrbc_value *regs EXT )
+static void op_intern( mrbc_vm *vm, mrbc_value *regs EXT )
 {
   FETCH_B();
 
   assert( regs[a].tt == MRBC_TT_STRING );
 
-  mrbc_value sym_val = mrbc_symbol_new(vm, (const char*)regs[a].string->data);
+  mrbc_value sym_val = mrbc_symbol_new(vm, (const char*)regs[a].uni.string->data);
 
   mrbc_decref( &regs[a] );
   regs[a] = sym_val;
@@ -2320,11 +2330,13 @@ static inline void op_intern( mrbc_vm *vm, mrbc_value *regs EXT )
 
   R[a] = intern(Pool[b])
 */
-static inline void op_symbol( mrbc_vm *vm, mrbc_value *regs EXT )
+static void op_symbol( mrbc_vm *vm, mrbc_value *regs EXT )
 {
   FETCH_BB();
 
-  const char *p = (const char *)mrbc_irep_pool_ptr(vm->cur_irep, b);
+  // const char *p = (const char *)mrbc_irep_pool_ptr(vm->cur_irep, b);
+  const uint8_t *pool = vm->cur_irep->pool;
+  const char *p = pool + mrbc_irep_tbl_pools(vm->cur_irep)[(b)];
   mrbc_sym sym_id = mrbc_str_to_symid( p+3 );	// 3 is TT and length
   if( sym_id < 0 ) {
     mrbc_raise(vm, MRBC_CLASS(Exception), "Overflow MAX_SYMBOLS_COUNT");
@@ -2341,7 +2353,7 @@ static inline void op_symbol( mrbc_vm *vm, mrbc_value *regs EXT )
 
   R[a] = str_dup(Pool[b])
 */
-static inline void op_string( mrbc_vm *vm, mrbc_value *regs EXT )
+static void op_string( mrbc_vm *vm, mrbc_value *regs EXT )
 {
   FETCH_BB();
 
@@ -2355,7 +2367,7 @@ static inline void op_string( mrbc_vm *vm, mrbc_value *regs EXT )
 
   str_cat(R[a],R[a+1])
 */
-static inline void op_strcat( mrbc_vm *vm, mrbc_value *regs EXT )
+static void op_strcat( mrbc_vm *vm, mrbc_value *regs EXT )
 {
   FETCH_B();
 
@@ -2366,7 +2378,7 @@ static inline void op_strcat( mrbc_vm *vm, mrbc_value *regs EXT )
 			MRBC_SYM(to_s)) == 0 ) return;
   if( !method.c_func ) return;		// TODO: Not support?
 
-  method.func( vm, regs + a + 1, 0 );
+  method.uni_func.func( vm, regs + a + 1, 0 );
   mrbc_string_append( &regs[a], &regs[a+1] );
   mrbc_decref_empty( &regs[a+1] );
 
@@ -2381,18 +2393,18 @@ static inline void op_strcat( mrbc_vm *vm, mrbc_value *regs EXT )
 
   R[a] = hash_new(R[a],R[a+1]..R[a+b*2-1])
 */
-static inline void op_hash( mrbc_vm *vm, mrbc_value *regs EXT )
+static void op_hash( mrbc_vm *vm, mrbc_value *regs EXT )
 {
   FETCH_BB();
 
   mrbc_value value = mrbc_hash_new(vm, b);
-  if( value.hash == NULL ) return;   // ENOMEM
+  if( value.uni.hash == NULL ) return;   // ENOMEM
 
   // note: Do not detect duplicate keys.
   b *= 2;
-  memcpy( value.hash->data, &regs[a], sizeof(mrbc_value) * b );
+  memcpy( value.uni.hash->data, &regs[a], sizeof(mrbc_value) * b );
   memset( &regs[a], 0, sizeof(mrbc_value) * b );
-  value.hash->n_stored = b;
+  value.uni.hash->n_stored = b;
 
   mrbc_decref(&regs[a]);
   regs[a] = value;
@@ -2404,7 +2416,7 @@ static inline void op_hash( mrbc_vm *vm, mrbc_value *regs EXT )
 
   hash_push(R[a],R[a+1]..R[a+b*2])
 */
-static inline void op_hashadd( mrbc_vm *vm, mrbc_value *regs EXT )
+static void op_hashadd( mrbc_vm *vm, mrbc_value *regs EXT )
 {
   FETCH_BB();
 
@@ -2416,9 +2428,9 @@ static inline void op_hashadd( mrbc_vm *vm, mrbc_value *regs EXT )
 
   // data copy.
   // note: Do not detect duplicate keys.
-  memcpy( regs[a].hash->data + sz1, &regs[a+1], sizeof(mrbc_value) * sz2 );
+  memcpy( regs[a].uni.hash->data + sz1, &regs[a+1], sizeof(mrbc_value) * sz2 );
   memset( &regs[a+1], 0, sizeof(mrbc_value) * sz2 );
-  regs[a].hash->n_stored = sz1 + sz2;
+  regs[a].uni.hash->n_stored = sz1 + sz2;
 }
 
 
@@ -2427,7 +2439,7 @@ static inline void op_hashadd( mrbc_vm *vm, mrbc_value *regs EXT )
 
   R[a] = hash_cat(R[a],R[a+1])
 */
-static inline void op_hashcat( mrbc_vm *vm, mrbc_value *regs EXT )
+static void op_hashcat( mrbc_vm *vm, mrbc_value *regs EXT )
 {
   FETCH_B();
 
@@ -2448,14 +2460,14 @@ static inline void op_hashcat( mrbc_vm *vm, mrbc_value *regs EXT )
   R[a] = lambda(Irep[b],L_BLOCK)
   R[a] = lambda(Irep[b],L_METHOD)
 */
-static inline void op_method( mrbc_vm *vm, mrbc_value *regs EXT )
+static void op_method( mrbc_vm *vm, mrbc_value *regs EXT )
 {
   FETCH_BB();
 
   mrbc_decref(&regs[a]);
 
   mrbc_value val = mrbc_proc_new(vm, mrbc_irep_child_irep(vm->cur_irep, b));
-  if( !val.proc ) return;	// ENOMEM
+  if( !val.uni.proc ) return;	// ENOMEM
 
   regs[a] = val;
 }
@@ -2466,7 +2478,7 @@ static inline void op_method( mrbc_vm *vm, mrbc_value *regs EXT )
 
   R[a] = range_new(R[a],R[a+1],FALSE)
 */
-static inline void op_range_inc( mrbc_vm *vm, mrbc_value *regs EXT )
+static void op_range_inc( mrbc_vm *vm, mrbc_value *regs EXT )
 {
   FETCH_B();
 
@@ -2481,7 +2493,7 @@ static inline void op_range_inc( mrbc_vm *vm, mrbc_value *regs EXT )
 
   R[a] = range_new(R[a],R[a+1],TRUE)
 */
-static inline void op_range_exc( mrbc_vm *vm, mrbc_value *regs EXT )
+static void op_range_exc( mrbc_vm *vm, mrbc_value *regs EXT )
 {
   FETCH_B();
 
@@ -2496,13 +2508,13 @@ static inline void op_range_exc( mrbc_vm *vm, mrbc_value *regs EXT )
 
   R[a] = ::Object
 */
-static inline void op_oclass( mrbc_vm *vm, mrbc_value *regs EXT )
+static void op_oclass( mrbc_vm *vm, mrbc_value *regs EXT )
 {
   FETCH_B();
 
   mrbc_decref(&regs[a]);
   regs[a].tt = MRBC_TT_CLASS;
-  regs[a].cls = mrbc_class_object;
+  regs[a].uni.cls = mrbc_class_object;
 }
 
 
@@ -2511,12 +2523,12 @@ static inline void op_oclass( mrbc_vm *vm, mrbc_value *regs EXT )
 
   R[a] = newclass(R[a],Syms[b],R[a+1])
 */
-static inline void op_class( mrbc_vm *vm, mrbc_value *regs EXT )
+static void op_class( mrbc_vm *vm, mrbc_value *regs EXT )
 {
   FETCH_BB();
 
   const char *class_name = mrbc_irep_symbol_cstr(vm->cur_irep, b);
-  mrbc_class *super = (regs[a+1].tt == MRBC_TT_CLASS) ? regs[a+1].cls : 0;
+  mrbc_class *super = (regs[a+1].tt == MRBC_TT_CLASS) ? regs[a+1].uni.cls : 0;
 
   // check unsupported pattern.
   if( super ) {
@@ -2537,7 +2549,7 @@ static inline void op_class( mrbc_vm *vm, mrbc_value *regs EXT )
   //  regs[a] was set to NIL by compiler. So, no need to release regs[a].
   assert( mrbc_type(regs[a]) == MRBC_TT_NIL );
   regs[a].tt = MRBC_TT_CLASS;
-  regs[a].cls = cls;
+  regs[a].uni.cls = cls;
 }
 
 
@@ -2546,7 +2558,7 @@ static inline void op_class( mrbc_vm *vm, mrbc_value *regs EXT )
 
   R[a] = blockexec(R[a],Irep[b])
 */
-static inline void op_exec( mrbc_vm *vm, mrbc_value *regs EXT )
+static void op_exec( mrbc_vm *vm, mrbc_value *regs EXT )
 {
   FETCH_BB();
   assert( regs[a].tt == MRBC_TT_CLASS );
@@ -2559,7 +2571,7 @@ static inline void op_exec( mrbc_vm *vm, mrbc_value *regs EXT )
   vm->inst = vm->cur_irep->inst;
   vm->cur_regs += a;
 
-  vm->target_class = regs[a].cls;
+  vm->target_class = regs[a].uni.cls;
 }
 
 
@@ -2568,16 +2580,16 @@ static inline void op_exec( mrbc_vm *vm, mrbc_value *regs EXT )
 
   R[a].newmethod(Syms[b],R[a+1]); R[a] = Syms[b]
 */
-static inline void op_def( mrbc_vm *vm, mrbc_value *regs EXT )
+static void op_def( mrbc_vm *vm, mrbc_value *regs EXT )
 {
   FETCH_BB();
 
   assert( regs[a].tt == MRBC_TT_CLASS );
   assert( regs[a+1].tt == MRBC_TT_PROC );
 
-  mrbc_class *cls = regs[a].cls;
+  mrbc_class *cls = regs[a].uni.cls;
   mrbc_sym sym_id = mrbc_irep_symbol_id(vm->cur_irep, b);
-  mrbc_proc *proc = regs[a+1].proc;
+  mrbc_proc *proc = regs[a+1].uni.proc;
   mrbc_method *method;
 
   if( vm->vm_id == 0 ) {
@@ -2590,17 +2602,17 @@ static inline void op_def( mrbc_vm *vm, mrbc_value *regs EXT )
   method->type = (vm->vm_id == 0) ? 'm' : 'M';
   method->c_func = 0;
   method->sym_id = sym_id;
-  method->irep = proc->irep;
-  method->next = cls->method_link;
+  method->uni_func.irep = proc->irep;
+  method->uni_next.next = cls->method_link;
   cls->method_link = method;
 
   // checking same method
-  for( ;method->next != NULL; method = method->next ) {
-    if( method->next->sym_id == sym_id ) {
+  for( ;method->uni_next.next != NULL; method = method->uni_next.next ) {
+    if( method->uni_next.next->sym_id == sym_id ) {
       // Found it. Unchain it in linked list and remove.
-      mrbc_method *del_method = method->next;
+      mrbc_method *del_method = method->uni_next.next;
 
-      method->next = del_method->next;
+      method->uni_next.next = del_method->uni_next.next;
       if( del_method->type == 'M' ) mrbc_raw_free( del_method );
 
       break;
@@ -2616,7 +2628,7 @@ static inline void op_def( mrbc_vm *vm, mrbc_value *regs EXT )
 
   alias_method(target_class,Syms[a],Syms[b])
 */
-static inline void op_alias( mrbc_vm *vm, mrbc_value *regs EXT )
+static void op_alias( mrbc_vm *vm, mrbc_value *regs EXT )
 {
   FETCH_BB();
 
@@ -2635,15 +2647,15 @@ static inline void op_alias( mrbc_vm *vm, mrbc_value *regs EXT )
 
   method->type = 'M';
   method->sym_id = sym_id_new;
-  method->next = cls->method_link;
+  method->uni_next.next = cls->method_link;
   cls->method_link = method;
 
   // checking same method
   //  see OP_DEF function. same it.
-  for( ;method->next != NULL; method = method->next ) {
-    if( method->next->sym_id == sym_id_new ) {
-      mrbc_method *del_method = method->next;
-      method->next = del_method->next;
+  for( ;method->uni_next.next != NULL; method = method->uni_next.next ) {
+    if( method->uni_next.next->sym_id == sym_id_new ) {
+      mrbc_method *del_method = method->uni_next.next;
+      method->uni_next.next = del_method->uni_next.next;
       if( del_method->type == 'M' ) mrbc_raw_free( del_method );
       break;
     }
@@ -2656,7 +2668,7 @@ static inline void op_alias( mrbc_vm *vm, mrbc_value *regs EXT )
 
   R[a] = R[a].singleton_class
 */
-static inline void op_sclass( mrbc_vm *vm, mrbc_value *regs EXT )
+static void op_sclass( mrbc_vm *vm, mrbc_value *regs EXT )
 {
   // currently, not supported
   FETCH_B();
@@ -2668,13 +2680,13 @@ static inline void op_sclass( mrbc_vm *vm, mrbc_value *regs EXT )
 
   R[a] = target_class
 */
-static inline void op_tclass( mrbc_vm *vm, mrbc_value *regs EXT )
+static void op_tclass( mrbc_vm *vm, mrbc_value *regs EXT )
 {
   FETCH_B();
 
   mrbc_decref(&regs[a]);
   regs[a].tt = MRBC_TT_CLASS;
-  regs[a].cls = vm->target_class;
+  regs[a].uni.cls = vm->target_class;
 }
 
 
@@ -2686,7 +2698,7 @@ static inline void op_tclass( mrbc_vm *vm, mrbc_value *regs EXT )
   make 2nd operand (b) 16bit
   make 2nd operand (b) 16bit
 */
-static inline void op_ext( mrbc_vm *vm, mrbc_value *regs EXT )
+static void op_ext( mrbc_vm *vm, mrbc_value *regs EXT )
 {
   FETCH_Z();
   mrbc_raise(vm, MRBC_CLASS(Exception),
@@ -2700,7 +2712,7 @@ static inline void op_ext( mrbc_vm *vm, mrbc_value *regs EXT )
 
   stop VM
 */
-static inline void op_stop( mrbc_vm *vm, mrbc_value *regs EXT )
+static void op_stop( mrbc_vm *vm, mrbc_value *regs EXT )
 {
   FETCH_Z();
 
@@ -2712,7 +2724,7 @@ static inline void op_stop( mrbc_vm *vm, mrbc_value *regs EXT )
 //================================================================
 /* Unsupported opecodes
 */
-static inline void op_unsupported( mrbc_vm *vm, mrbc_value *regs EXT )
+static void op_unsupported( mrbc_vm *vm, mrbc_value *regs EXT )
 {
   mrbc_raisef( vm, MRBC_CLASS(Exception),
 	       "Unimplemented opcode (0x%02x) found.", *(vm->inst - 1));

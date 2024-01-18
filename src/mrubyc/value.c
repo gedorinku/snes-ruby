@@ -64,6 +64,60 @@ void (* const mrbc_delfunc[])(mrbc_value *) = {
 /***** Global functions *****************************************************/
 
 //================================================================
+mrbc_value mrbc_integer_value(int n)
+{
+  mrbc_value v = {0};
+  v.tt = MRBC_TT_INTEGER;
+  v.uni.i = n;
+  return v;
+}
+
+#if MRBC_USE_FLOAT
+mrbc_value mrbc_float_value(struct VM *vm, mrbc_float_t n)
+{
+  mrbc_value v = {0};
+  v.tt = MRBC_TT_FLOAT;
+  v.uni.d = n;
+  return v;
+}
+#endif
+
+mrbc_value mrbc_nil_value()
+{
+  mrbc_value v = {0};
+  v.tt = MRBC_TT_NIL;
+  return v;
+}
+
+mrbc_value mrbc_true_value()
+{
+  mrbc_value v = {0};
+  v.tt = MRBC_TT_TRUE;
+  return v;
+}
+
+mrbc_value mrbc_false_value()
+{
+  mrbc_value v = {0};
+  v.tt = MRBC_TT_FALSE;
+  return v;
+}
+
+mrbc_value mrbc_bool_value(int n)
+{
+  mrbc_value v = {0};
+  v.tt = n ? MRBC_TT_TRUE : MRBC_TT_FALSE;
+  return v;
+}
+
+mrbc_value mrbc_symbol_value(int n)
+{
+  mrbc_value v = {0};
+  v.tt = MRBC_TT_SYMBOL;
+  v.uni.i = n;
+  return v;
+}
+
 /*! compare two mrbc_values
 
   @param  v1	Pointer to mrbc_value
@@ -131,7 +185,7 @@ int mrbc_compare(const mrbc_value *v1, const mrbc_value *v2)
   case MRBC_TT_CLASS:
   case MRBC_TT_OBJECT:
   case MRBC_TT_PROC:
-    return (v1->cls > v2->cls) * 2 - (v1->cls != v2->cls);
+    return (v1->uni.cls > v2->uni.cls) * 2 - (v1->uni.cls != v2->uni.cls);
 
   case MRBC_TT_ARRAY:
     return mrbc_array_compare( v1, v2 );

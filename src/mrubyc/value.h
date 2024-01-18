@@ -23,6 +23,8 @@
 #include "vm_config.h"
 //@endcond
 
+#include "int8.h"
+
 /***** Local headers ********************************************************/
 
 #ifdef __cplusplus
@@ -166,7 +168,7 @@ struct RObject {
     struct RHash *hash;		// MRBC_TT_HASH
     struct RException *exception; // MRBC_TT_EXCEPTION
     void *handle;		// internal use only.
-  };
+  } uni;
 };
 typedef struct RObject mrb_object;	// not recommended.
 typedef struct RObject mrb_value;	// not recommended.
@@ -191,27 +193,42 @@ typedef struct RObject mrbc_value;
   get symbol value (#mrbc_sym) from mrbc_value.
 */
 #define mrbc_type(o)		((o).tt)
-#define mrbc_integer(o)		((o).i)
-#define mrbc_float(o)		((o).d)
-#define mrbc_symbol(o)		((o).i)
+#define mrbc_integer(o)		((o).uni.i)
+#define mrbc_float(o)		((o).uni.d)
+#define mrbc_symbol(o)		((o).uni.i)
 
 // setters
-#define mrbc_set_integer(p,n)	(p)->tt = MRBC_TT_INTEGER; (p)->i = (n)
-#define mrbc_set_float(p,n)	(p)->tt = MRBC_TT_FLOAT; (p)->d = (n)
+#define mrbc_set_integer(p,n)	(p)->tt = MRBC_TT_INTEGER; (p)->uni.i = (n)
+#define mrbc_set_float(p,n)	(p)->tt = MRBC_TT_FLOAT; (p)->uni.d = (n)
 #define mrbc_set_nil(p)		(p)->tt = MRBC_TT_NIL
 #define mrbc_set_true(p)	(p)->tt = MRBC_TT_TRUE
 #define mrbc_set_false(p)	(p)->tt = MRBC_TT_FALSE
 #define mrbc_set_bool(p,n)	(p)->tt = (n)? MRBC_TT_TRUE: MRBC_TT_FALSE
-#define mrbc_set_symbol(p,n)	(p)->tt = MRBC_TT_SYMBOL; (p)->i = (n)
+#define mrbc_set_symbol(p,n)	(p)->tt = MRBC_TT_SYMBOL; (p)->uni.i = (n)
 
 // make immediate values.
-#define mrbc_integer_value(n)	((mrbc_value){.tt = MRBC_TT_INTEGER, .i=(n)})
-#define mrbc_float_value(vm,n)	((mrbc_value){.tt = MRBC_TT_FLOAT, .d=(n)})
-#define mrbc_nil_value()	((mrbc_value){.tt = MRBC_TT_NIL})
-#define mrbc_true_value()	((mrbc_value){.tt = MRBC_TT_TRUE})
-#define mrbc_false_value()	((mrbc_value){.tt = MRBC_TT_FALSE})
-#define mrbc_bool_value(n)	((mrbc_value){.tt = (n)?MRBC_TT_TRUE:MRBC_TT_FALSE})
-#define mrbc_symbol_value(n)	((mrbc_value){.tt = MRBC_TT_SYMBOL, .i=(n)})
+// #define mrbc_integer_value(n)	((mrbc_value){.tt = MRBC_TT_INTEGER, .i=(n)})
+mrbc_value mrbc_integer_value(int n);
+
+// #define mrbc_float_value(vm,n)	((mrbc_value){.tt = MRBC_TT_FLOAT, .d=(n)})
+#if MRBC_USE_FLOAT
+mrbc_value mrbc_float_value(struct VM *vm, mrbc_float_t n);
+#endif
+
+// #define mrbc_nil_value()	((mrbc_value){.tt = MRBC_TT_NIL})
+mrbc_value mrbc_nil_value();
+
+// #define mrbc_true_value()	((mrbc_value){.tt = MRBC_TT_TRUE})
+mrbc_value mrbc_true_value();
+
+// #define mrbc_false_value()	((mrbc_value){.tt = MRBC_TT_FALSE})
+mrbc_value mrbc_false_value();
+
+// #define mrbc_bool_value(n)	((mrbc_value){.tt = (n)?MRBC_TT_TRUE:MRBC_TT_FALSE})
+mrbc_value mrbc_bool_value(int n);
+
+// #define mrbc_symbol_value(n)	((mrbc_value){.tt = MRBC_TT_SYMBOL, .i=(n)})
+mrbc_value mrbc_symbol_value(int n);
 
 // (for mruby compatible)
 #define mrb_type(o)		mrbc_type(o)
@@ -284,21 +301,21 @@ typedef struct RObject mrbc_value;
     mrbc_int_t nnn = (n);	\
     mrbc_decref(v);		\
     v[0].tt = MRBC_TT_INTEGER;	\
-    v[0].i = nnn;		\
+    v[0].uni.i = nnn;		\
   } while(0)
 #define SET_FLOAT_RETURN(n) do {\
     mrbc_float_t nnn = (n);	\
     mrbc_decref(v);		\
     v[0].tt = MRBC_TT_FLOAT;	\
-    v[0].d = nnn;		\
+    v[0].uni.d = nnn;		\
 } while(0)
 
 #define GET_TT_ARG(n)		(v[(n)].tt)
-#define GET_INT_ARG(n)		(v[(n)].i)
+#define GET_INT_ARG(n)		(v[(n)].uni.i)
 #define GET_ARY_ARG(n)		(v[(n)])
 #define GET_ARG(n)		(v[(n)])
-#define GET_FLOAT_ARG(n)	(v[(n)].d)
-#define GET_STRING_ARG(n)	(v[(n)].string->data)
+#define GET_FLOAT_ARG(n)	(v[(n)].uni.d)
+#define GET_STRING_ARG(n)	(v[(n)].uni.string->data)
 
 
 #if defined(MRBC_DEBUG)
@@ -355,11 +372,12 @@ typedef struct RObject mrbc_value;
   @def MRBC_KW_NARGC()
   Get the number of arguments without keyword arguments.
 */
-#define MRBC_KW_ARG(...) \
-  MRBC_each(__VA_ARGS__)( MRBC_KW_ARG_decl1, __VA_ARGS__ ) \
-  if( v[argc].tt == MRBC_TT_HASH ) { \
-    MRBC_each(__VA_ARGS__)( MRBC_KW_ARG_decl2, __VA_ARGS__ ) \
-  }
+// FIXME: 可変長引数を持つマクロがサポートされてない?
+// #define MRBC_KW_ARG(...) \
+//   MRBC_each(__VA_ARGS__)( MRBC_KW_ARG_decl1, __VA_ARGS__ ) \
+//   if( v[argc].tt == MRBC_TT_HASH ) { \
+//     MRBC_each(__VA_ARGS__)( MRBC_KW_ARG_decl2, __VA_ARGS__ ) \
+//   }
 #define MRBC_KW_ARG_decl1(kw) mrbc_value kw = {.tt = MRBC_TT_EMPTY};
 #define MRBC_KW_ARG_decl2(kw) kw = mrbc_hash_remove_by_id(&v[argc], mrbc_str_to_symid(#kw));
 
@@ -370,8 +388,9 @@ typedef struct RObject mrbc_value;
 
 #define MRBC_KW_ISVALID(kw) (kw.tt != MRBC_TT_EMPTY)
 
-#define MRBC_KW_MANDATORY(...) \
-  (MRBC_each(__VA_ARGS__)( MRBC_KW_MANDATORY_decl1, __VA_ARGS__ ) 1)
+// FIXME: 可変長引数を持つマクロがサポートされてない?
+// #define MRBC_KW_MANDATORY(...) \
+//   (MRBC_each(__VA_ARGS__)( MRBC_KW_MANDATORY_decl1, __VA_ARGS__ ) 1)
 #define MRBC_KW_MANDATORY_decl1(kw) (MRBC_KW_ISVALID(kw)? 1 : \
   (mrbc_raisef(vm, MRBC_CLASS(ArgumentError), "missing keyword: %s", #kw), 0))&&
 
@@ -379,51 +398,53 @@ typedef struct RObject mrbc_value;
   (((v[argc].tt == MRBC_TT_HASH) && mrbc_hash_size(&v[argc])) ? \
    (mrbc_raise(vm, MRBC_CLASS(ArgumentError), "unknown keyword."), 0) : 1)
 
-#define MRBC_KW_DELETE(...) \
-  MRBC_each(__VA_ARGS__)( MRBC_KW_DELETE_decl, __VA_ARGS__ )
+// FIXME: 可変長引数を持つマクロがサポートされてない?
+// #define MRBC_KW_DELETE(...) \
+//   MRBC_each(__VA_ARGS__)( MRBC_KW_DELETE_decl, __VA_ARGS__ )
 #define MRBC_KW_DELETE_decl(kw) mrbc_decref(&kw);
 
 #define MRBC_KW_NARGC() \
   ((v[argc].tt == MRBC_TT_HASH || v[argc].tt == MRBC_TT_EMPTY) ? argc-1 : argc)
 
-#define MRBC_each(...) MRBC_each_sel(__VA_ARGS__, \
-  MRBC_each30,MRBC_each29,MRBC_each28,MRBC_each27,MRBC_each26, \
-  MRBC_each25,MRBC_each24,MRBC_each23,MRBC_each22,MRBC_each21, \
-  MRBC_each20,MRBC_each19,MRBC_each18,MRBC_each17,MRBC_each16, \
-  MRBC_each15,MRBC_each14,MRBC_each13,MRBC_each12,MRBC_each11, \
-  MRBC_each10,MRBC_each9, MRBC_each8, MRBC_each7, MRBC_each6,  \
-  MRBC_each5, MRBC_each4, MRBC_each3, MRBC_each2, MRBC_each1)
-#define MRBC_each_sel(a1,a2,a3,a4,a5,a6,a7,a8,a9,a10,a11,a12,a13,a14,a15,a16,a17,a18,a19,a20,a21,a22,a23,a24,a25,a26,a27,a28,a29,a30, a31, ...) a31
-#define MRBC_each1(func,arg) func(arg)
-#define MRBC_each2(func,arg, ...) func(arg) MRBC_each1(func,__VA_ARGS__)
-#define MRBC_each3(func,arg, ...) func(arg) MRBC_each2(func,__VA_ARGS__)
-#define MRBC_each4(func,arg, ...) func(arg) MRBC_each3(func,__VA_ARGS__)
-#define MRBC_each5(func,arg, ...) func(arg) MRBC_each4(func,__VA_ARGS__)
-#define MRBC_each6(func,arg, ...) func(arg) MRBC_each5(func,__VA_ARGS__)
-#define MRBC_each7(func,arg, ...) func(arg) MRBC_each6(func,__VA_ARGS__)
-#define MRBC_each8(func,arg, ...) func(arg) MRBC_each7(func,__VA_ARGS__)
-#define MRBC_each9(func,arg, ...) func(arg) MRBC_each8(func,__VA_ARGS__)
-#define MRBC_each10(func,arg, ...) func(arg) MRBC_each9(func,__VA_ARGS__)
-#define MRBC_each11(func,arg, ...) func(arg) MRBC_each10(func,__VA_ARGS__)
-#define MRBC_each12(func,arg, ...) func(arg) MRBC_each11(func,__VA_ARGS__)
-#define MRBC_each13(func,arg, ...) func(arg) MRBC_each12(func,__VA_ARGS__)
-#define MRBC_each14(func,arg, ...) func(arg) MRBC_each13(func,__VA_ARGS__)
-#define MRBC_each15(func,arg, ...) func(arg) MRBC_each14(func,__VA_ARGS__)
-#define MRBC_each16(func,arg, ...) func(arg) MRBC_each15(func,__VA_ARGS__)
-#define MRBC_each17(func,arg, ...) func(arg) MRBC_each16(func,__VA_ARGS__)
-#define MRBC_each18(func,arg, ...) func(arg) MRBC_each17(func,__VA_ARGS__)
-#define MRBC_each19(func,arg, ...) func(arg) MRBC_each18(func,__VA_ARGS__)
-#define MRBC_each20(func,arg, ...) func(arg) MRBC_each19(func,__VA_ARGS__)
-#define MRBC_each21(func,arg, ...) func(arg) MRBC_each20(func,__VA_ARGS__)
-#define MRBC_each22(func,arg, ...) func(arg) MRBC_each21(func,__VA_ARGS__)
-#define MRBC_each23(func,arg, ...) func(arg) MRBC_each22(func,__VA_ARGS__)
-#define MRBC_each24(func,arg, ...) func(arg) MRBC_each23(func,__VA_ARGS__)
-#define MRBC_each25(func,arg, ...) func(arg) MRBC_each24(func,__VA_ARGS__)
-#define MRBC_each26(func,arg, ...) func(arg) MRBC_each25(func,__VA_ARGS__)
-#define MRBC_each27(func,arg, ...) func(arg) MRBC_each26(func,__VA_ARGS__)
-#define MRBC_each28(func,arg, ...) func(arg) MRBC_each27(func,__VA_ARGS__)
-#define MRBC_each29(func,arg, ...) func(arg) MRBC_each28(func,__VA_ARGS__)
-#define MRBC_each30(func,arg, ...) func(arg) MRBC_each29(func,__VA_ARGS__)
+// FIXME: 可変長引数を持つマクロがサポートされてない?
+// #define MRBC_each(...) MRBC_each_sel(__VA_ARGS__, \
+//   MRBC_each30,MRBC_each29,MRBC_each28,MRBC_each27,MRBC_each26, \
+//   MRBC_each25,MRBC_each24,MRBC_each23,MRBC_each22,MRBC_each21, \
+//   MRBC_each20,MRBC_each19,MRBC_each18,MRBC_each17,MRBC_each16, \
+//   MRBC_each15,MRBC_each14,MRBC_each13,MRBC_each12,MRBC_each11, \
+//   MRBC_each10,MRBC_each9, MRBC_each8, MRBC_each7, MRBC_each6,  \
+//   MRBC_each5, MRBC_each4, MRBC_each3, MRBC_each2, MRBC_each1)
+// #define MRBC_each_sel(a1,a2,a3,a4,a5,a6,a7,a8,a9,a10,a11,a12,a13,a14,a15,a16,a17,a18,a19,a20,a21,a22,a23,a24,a25,a26,a27,a28,a29,a30, a31, ...) a31
+// #define MRBC_each1(func,arg) func(arg)
+// #define MRBC_each2(func,arg, ...) func(arg) MRBC_each1(func,__VA_ARGS__)
+// #define MRBC_each3(func,arg, ...) func(arg) MRBC_each2(func,__VA_ARGS__)
+// #define MRBC_each4(func,arg, ...) func(arg) MRBC_each3(func,__VA_ARGS__)
+// #define MRBC_each5(func,arg, ...) func(arg) MRBC_each4(func,__VA_ARGS__)
+// #define MRBC_each6(func,arg, ...) func(arg) MRBC_each5(func,__VA_ARGS__)
+// #define MRBC_each7(func,arg, ...) func(arg) MRBC_each6(func,__VA_ARGS__)
+// #define MRBC_each8(func,arg, ...) func(arg) MRBC_each7(func,__VA_ARGS__)
+// #define MRBC_each9(func,arg, ...) func(arg) MRBC_each8(func,__VA_ARGS__)
+// #define MRBC_each10(func,arg, ...) func(arg) MRBC_each9(func,__VA_ARGS__)
+// #define MRBC_each11(func,arg, ...) func(arg) MRBC_each10(func,__VA_ARGS__)
+// #define MRBC_each12(func,arg, ...) func(arg) MRBC_each11(func,__VA_ARGS__)
+// #define MRBC_each13(func,arg, ...) func(arg) MRBC_each12(func,__VA_ARGS__)
+// #define MRBC_each14(func,arg, ...) func(arg) MRBC_each13(func,__VA_ARGS__)
+// #define MRBC_each15(func,arg, ...) func(arg) MRBC_each14(func,__VA_ARGS__)
+// #define MRBC_each16(func,arg, ...) func(arg) MRBC_each15(func,__VA_ARGS__)
+// #define MRBC_each17(func,arg, ...) func(arg) MRBC_each16(func,__VA_ARGS__)
+// #define MRBC_each18(func,arg, ...) func(arg) MRBC_each17(func,__VA_ARGS__)
+// #define MRBC_each19(func,arg, ...) func(arg) MRBC_each18(func,__VA_ARGS__)
+// #define MRBC_each20(func,arg, ...) func(arg) MRBC_each19(func,__VA_ARGS__)
+// #define MRBC_each21(func,arg, ...) func(arg) MRBC_each20(func,__VA_ARGS__)
+// #define MRBC_each22(func,arg, ...) func(arg) MRBC_each21(func,__VA_ARGS__)
+// #define MRBC_each23(func,arg, ...) func(arg) MRBC_each22(func,__VA_ARGS__)
+// #define MRBC_each24(func,arg, ...) func(arg) MRBC_each23(func,__VA_ARGS__)
+// #define MRBC_each25(func,arg, ...) func(arg) MRBC_each24(func,__VA_ARGS__)
+// #define MRBC_each26(func,arg, ...) func(arg) MRBC_each25(func,__VA_ARGS__)
+// #define MRBC_each27(func,arg, ...) func(arg) MRBC_each26(func,__VA_ARGS__)
+// #define MRBC_each28(func,arg, ...) func(arg) MRBC_each27(func,__VA_ARGS__)
+// #define MRBC_each29(func,arg, ...) func(arg) MRBC_each28(func,__VA_ARGS__)
+// #define MRBC_each30(func,arg, ...) func(arg) MRBC_each29(func,__VA_ARGS__)
 
 
 /***** Global variables *****************************************************/
@@ -444,13 +465,13 @@ int mrbc_strcpy(char *dest, int destsize, const char *src);
 
   @param   v     Pointer to mrbc_value
 */
-static inline void mrbc_incref(mrbc_value *v)
+static void mrbc_incref(mrbc_value *v)
 {
   if( v->tt <= MRBC_TT_INC_DEC_THRESHOLD ) return;
 
-  assert( v->obj->ref_count != 0 );
-  assert( v->obj->ref_count != 0xff );	// check max value.
-  v->obj->ref_count++;
+  assert( v->uni.obj->ref_count != 0 );
+  assert( v->uni.obj->ref_count != 0xff );	// check max value.
+  v->uni.obj->ref_count++;
 }
 
 
@@ -459,14 +480,14 @@ static inline void mrbc_incref(mrbc_value *v)
 
   @param   v     Pointer to target mrbc_value
 */
-static inline void mrbc_decref(mrbc_value *v)
+static void mrbc_decref(mrbc_value *v)
 {
   if( v->tt <= MRBC_TT_INC_DEC_THRESHOLD ) return;
 
-  assert( v->obj->ref_count != 0 );
-  assert( v->obj->ref_count != 0xffff );	// check broken data.
+  assert( v->uni.obj->ref_count != 0 );
+  assert( v->uni.obj->ref_count != 0xffff );	// check broken data.
 
-  if( --v->obj->ref_count != 0 ) return;
+  if( --v->uni.obj->ref_count != 0 ) return;
 
   (*mrbc_delfunc[v->tt])(v);
 }
@@ -477,7 +498,7 @@ static inline void mrbc_decref(mrbc_value *v)
 
   @param   v     Pointer to target mrbc_value
 */
-static inline void mrbc_decref_empty(mrbc_value *v)
+static void mrbc_decref_empty(mrbc_value *v)
 {
   mrbc_decref(v);
   v->tt = MRBC_TT_EMPTY;
