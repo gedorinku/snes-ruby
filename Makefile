@@ -35,7 +35,7 @@ sfiles += $(wildcard $(sources)/*/*/*.asm)
 ofiles	:= $(cfiles:%.c=build/%.o) $(sfiles:%.asm=build/%.o)
 listfiles:= $(cfiles:%.c=listing/%.asm) $(cfiles:%.c=listing/%.i)
 
-LDFLAGS	:= -B -E -T -P00 -F hirom.cfg
+LDFLAGS	:= -HB -V -T -Pff -Zcode=8000 -C8000 -K8000 -D7e2000,0000 -U7e8000,0000
 libs	:= -LMS -LCL
 
 includes:= $(foreach dir,$(incdirs),-I$(dir))
@@ -96,7 +96,6 @@ listing/%.i : %.c
 	sed -i -e 's/^# \([0-9]* \)/\/\/ \1/g' $@
 
 %.sfc:
-	$(LD) -HB -V -T -Pff \
-				-Zcode=8000 -C8000 -K8000 -D7e2000,0000 -U7e8000,0000 \
+	$(LD) $(LDFLAGS) \
 				-N $(ofiles) $(libs) -O $@
 	@sed -e "s/^\(\w\)/;\1/g" $(target).map | sed -e "s/^\t//g" | sed "s/~//g" > $(target).sym
