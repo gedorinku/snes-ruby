@@ -2334,7 +2334,9 @@ static void op_symbol( mrbc_vm *vm, mrbc_value *regs EXT )
 {
   FETCH_BB();
 
-  const char *p = (const char *)mrbc_irep_pool_ptr(vm->cur_irep, b);
+  // const char *p = (const char *)mrbc_irep_pool_ptr(vm->cur_irep, b);
+  const uint8_t *pool = vm->cur_irep->pool;
+  const char *p = pool + mrbc_irep_tbl_pools(vm->cur_irep)[(b)];
   mrbc_sym sym_id = mrbc_str_to_symid( p+3 );	// 3 is TT and length
   if( sym_id < 0 ) {
     mrbc_raise(vm, MRBC_CLASS(Exception), "Overflow MAX_SYMBOLS_COUNT");

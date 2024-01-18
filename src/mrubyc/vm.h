@@ -78,9 +78,11 @@ typedef struct IREP mrb_irep;
 #define mrbc_irep_tbl_pools(irep) \
   ( (uint16_t *) ((irep)->data + (irep)->slen * sizeof(mrbc_sym)) )
 
+// Workaround: mrbc_irep_pool_ptr(vm->cur_irep, n)のような使い方をするとWDC816CCがpの上位8bitが常に0x00になる機械語を出力する。
+// 左の項を一旦変数に入れると動く。
 //! get a pointer to n'th pool data.
-#define mrbc_irep_pool_ptr(irep, n) \
-  ( (irep)->pool + mrbc_irep_tbl_pools(irep)[(n)] )
+// #define mrbc_irep_pool_ptr(irep, n) \
+//   ( (irep)->pool + mrbc_irep_tbl_pools(irep)[(n)] )
 
 
 //! get a child irep table pointer.
