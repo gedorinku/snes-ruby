@@ -216,7 +216,8 @@ static mrbc_irep * load_irep_1(struct VM *vm, const uint8_t *bin, int *len, int 
   p = p_irep->pool + 2;
   for( i = 0; i < irep.plen; i++ ) {
     int siz = 0;
-    if( (p - irep.pool) > UINT16_MAX ) {
+    // FIXME: 左の項を long long にキャストしないと正しく比較できない
+    if( (long long)(p - irep.pool) > UINT16_MAX ) {
       mrbc_raise(vm, MRBC_CLASS(Exception), "Overflow IREP data offset table.");
       return NULL;
     }
