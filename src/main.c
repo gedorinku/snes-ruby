@@ -6,32 +6,24 @@
 
 #include "main.rb.bytecode.c"
 
-#if !defined(MRBC_MEMORY_SIZE)
-// FIXME: 8067 より大きくすると mrbc_init_alloc に失敗する
-#define MRBC_MEMORY_SIZE (8000)
-#endif
-static uint8_t memory_pool[MRBC_MEMORY_SIZE];
-
 extern char tilfont, palfont;
 
 int run()
 {
-    mrbc_init_alloc(memory_pool, MRBC_MEMORY_SIZE);
     mrbc_init_global();
-    return 2;
     mrbc_init_class();
 
     mrbc_vm *vm = mrbc_vm_open(NULL);
     if (vm == NULL)
     {
         consoleDrawText(10, 10, "vm is null");
-        return 1;
+        return -1;
     }
 
     if (mrbc_load_mrb(vm, mrbbuf) != 0)
     {
         consoleDrawText(10, 10, "failed to load");
-        return 1;
+        return -1;
     }
 
     mrbc_vm_begin(vm);
@@ -65,13 +57,10 @@ int main(void)
     /*
         start mruby/c
     */
-    int ret;
-    ret = run();
+    int ret = run();
     char res[16];
     sprintf(res, "ret: %d", ret);
     consoleDrawText(10, 10, res);
-
-    consoleDrawText(6, 14, "Hello World !");
 
     // Wait for nothing :P
     setScreenOn();

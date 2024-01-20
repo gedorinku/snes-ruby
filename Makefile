@@ -1,7 +1,7 @@
 export PVSNESLIB_HOME := $(dir $(realpath $(firstword $(MAKEFILE_LIST))))pvsneslib
 PVSNESLIB_DEBUG = 1
 
-CFLAGS += -Isrc/mrubyc -Isrc/musl -D MRBC_USE_FLOAT=0
+CFLAGS += -Isrc/mrubyc -Isrc/musl -DMRBC_USE_FLOAT=0 -DMRBC_ALLOC_LIBC=1
 
 include ${PVSNESLIB_HOME}/devkitsnes/snes_rules
 

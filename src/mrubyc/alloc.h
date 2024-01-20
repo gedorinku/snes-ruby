@@ -98,7 +98,13 @@ static inline void mrbc_raw_free(void *ptr) {
   free(ptr);
 }
 static inline void *mrbc_raw_realloc(void *ptr, unsigned int size) {
-  return realloc(ptr, size);
+  void *new_ptr = malloc(size);
+  if (new_ptr == NULL) return NULL;
+
+  memcpy(new_ptr, ptr, size);
+  free(ptr);
+  return new_ptr;
+  // return realloc(ptr, size);
 }
 /*
  * When MRBC_ALLOC_LIBC is defined, you can not use mrbc_alloc_usable_size()
@@ -113,7 +119,8 @@ static inline void mrbc_free(const struct VM *vm, void *ptr) {
   free(ptr);
 }
 static inline void * mrbc_realloc(const struct VM *vm, void *ptr, unsigned int size) {
-  return realloc(ptr, size);
+  return mrbc_raw_realloc(ptr, size);
+  // return realloc(ptr, size);
 }
 static inline void *mrbc_alloc(const struct VM *vm, unsigned int size) {
   return malloc(size);
