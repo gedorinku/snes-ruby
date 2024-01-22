@@ -75,31 +75,31 @@ int mrbc_string_chomp(mrbc_value *src);
 //================================================================
 /*! compare
 */
-static int mrbc_string_compare(const mrbc_value *v1, const mrbc_value *v2)
+static inline int mrbc_string_compare(const mrbc_value *v1, const mrbc_value *v2)
 {
-  int len = (v1->uni.string->size < v2->uni.string->size) ?
-    v1->uni.string->size : v2->uni.string->size;
+  int len = (v1->string->size < v2->string->size) ?
+    v1->string->size : v2->string->size;
 
-  int res = memcmp(v1->uni.string->data, v2->uni.string->data, len);
+  int res = memcmp(v1->string->data, v2->string->data, len);
   if( res != 0 ) return res;
 
-  return v1->uni.string->size - v2->uni.string->size;
+  return v1->string->size - v2->string->size;
 }
 
 //================================================================
 /*! get size
 */
-static int mrbc_string_size(const mrbc_value *str)
+static inline int mrbc_string_size(const mrbc_value *str)
 {
-  return str->uni.string->size;
+  return str->string->size;
 }
 
 //================================================================
 /*! get c-language string (char *)
 */
-static char * mrbc_string_cstr(const mrbc_value *v)
+static inline char * mrbc_string_cstr(const mrbc_value *v)
 {
-  return (char*)v->uni.string->data;
+  return (char*)v->string->data;
 }
 
 

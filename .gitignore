@@ -17,10 +17,9 @@ linkfile
 *.brr
 *.asp
 *.ps
+soundbank.asm
+soundbank.h
 *.log
-*.tmp
-listing/
-build/
 
 # debug files
 *.dbg

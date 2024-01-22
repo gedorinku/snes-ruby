@@ -42,18 +42,18 @@ void mrbc_symbol_statistics(int *total_used);
 //================================================================
 /*! get c-language string (char *)
 */
-static const char * mrbc_symbol_cstr(const mrbc_value *v)
+static inline const char * mrbc_symbol_cstr(const mrbc_value *v)
 {
-  return mrbc_symid_to_str(v->uni.i);
+  return mrbc_symid_to_str(v->i);
 }
 
 
 // for legacy compatibility.
-static mrbc_sym str_to_symid(const char *str) {
+static inline mrbc_sym str_to_symid(const char *str) {
   return mrbc_str_to_symid(str);
 }
 
-static const char *symid_to_str(mrbc_sym sym_id) {
+static inline const char *symid_to_str(mrbc_sym sym_id) {
   return mrbc_symid_to_str(sym_id);
 }
 

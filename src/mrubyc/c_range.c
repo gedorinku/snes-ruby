@@ -48,15 +48,15 @@
 */
 mrbc_value mrbc_range_new(struct VM *vm, mrbc_value *first, mrbc_value *last, int flag_exclude)
 {
-  mrbc_value value = {MRBC_TT_RANGE};
+  mrbc_value value = {.tt = MRBC_TT_RANGE};
 
-  value.uni.range = mrbc_alloc(vm, sizeof(mrbc_range));
-  if( !value.uni.range ) return value;		// ENOMEM
+  value.range = mrbc_alloc(vm, sizeof(mrbc_range));
+  if( !value.range ) return value;		// ENOMEM
 
-  MRBC_INIT_OBJECT_HEADER( value.uni.range, "RA" );
-  value.uni.range->flag_exclude = flag_exclude;
-  value.uni.range->first = *first;
-  value.uni.range->last = *last;
+  MRBC_INIT_OBJECT_HEADER( value.range, "RA" );
+  value.range->flag_exclude = flag_exclude;
+  value.range->first = *first;
+  value.range->last = *last;
 
   return value;
 }
@@ -69,10 +69,10 @@ mrbc_value mrbc_range_new(struct VM *vm, mrbc_value *first, mrbc_value *last, in
 */
 void mrbc_range_delete(mrbc_value *v)
 {
-  mrbc_decref( &v->uni.range->first );
-  mrbc_decref( &v->uni.range->last );
+  mrbc_decref( &v->range->first );
+  mrbc_decref( &v->range->last );
 
-  mrbc_raw_free( v->uni.range );
+  mrbc_raw_free( v->range );
 }
 
 
@@ -84,9 +84,9 @@ void mrbc_range_delete(mrbc_value *v)
 */
 void mrbc_range_clear_vm_id(mrbc_value *v)
 {
-  mrbc_set_vm_id( v->uni.range, 0 );
-  mrbc_clear_vm_id( &v->uni.range->first );
-  mrbc_clear_vm_id( &v->uni.range->last );
+  mrbc_set_vm_id( v->range, 0 );
+  mrbc_clear_vm_id( &v->range->first );
+  mrbc_clear_vm_id( &v->range->last );
 }
 #endif
 
@@ -104,13 +104,13 @@ int mrbc_range_compare(const mrbc_value *v1, const mrbc_value *v2)
 {
   int res;
 
-  res = mrbc_compare( &v1->uni.range->first, &v2->uni.range->first );
+  res = mrbc_compare( &v1->range->first, &v2->range->first );
   if( res != 0 ) return res;
 
-  res = mrbc_compare( &v1->uni.range->last, &v2->uni.range->last );
+  res = mrbc_compare( &v1->range->last, &v2->range->last );
   if( res != 0 ) return res;
 
-  return (int)v2->uni.range->flag_exclude - (int)v1->uni.range->flag_exclude;
+  return (int)v2->range->flag_exclude - (int)v1->range->flag_exclude;
 }
 
 
@@ -120,19 +120,18 @@ int mrbc_range_compare(const mrbc_value *v1, const mrbc_value *v2)
 */
 static void c_range_equal3(struct VM *vm, mrbc_value v[], int argc)
 {
-  int cmp_first, result, cmp_last;
   if( mrbc_type(v[0]) == MRBC_TT_CLASS ) {
     mrbc_value result = mrbc_send( vm, v, argc, &v[1], "kind_of?", 1, &v[0] );
     SET_RETURN( result );
     return;
   }
 
-  cmp_first = mrbc_compare( &v[0].uni.range->first, &v[1] );
-  result = (cmp_first <= 0);
+  int cmp_first = mrbc_compare( &v[0].range->first, &v[1] );
+  int result = (cmp_first <= 0);
   if( !result ) goto DONE;
 
-  cmp_last  = mrbc_compare( &v[1], &v[0].uni.range->last );
-  result = (v->uni.range->flag_exclude) ? (cmp_last < 0) : (cmp_last <= 0);
+  int cmp_last  = mrbc_compare( &v[1], &v[0].range->last );
+  result = (v->range->flag_exclude) ? (cmp_last < 0) : (cmp_last <= 0);
 
  DONE:
   SET_BOOL_RETURN( result );
@@ -165,7 +164,7 @@ static void c_range_last(struct VM *vm, mrbc_value v[], int argc)
 */
 static void c_range_exclude_end(struct VM *vm, mrbc_value v[], int argc)
 {
-  int result = v->uni.range->flag_exclude;
+  int result = v->range->flag_exclude;
   SET_BOOL_RETURN( result );
 }
 
@@ -177,24 +176,21 @@ static void c_range_exclude_end(struct VM *vm, mrbc_value v[], int argc)
 */
 static void c_range_inspect(struct VM *vm, mrbc_value v[], int argc)
 {
-  mrbc_value ret;
-  int i;
   if( v[0].tt == MRBC_TT_CLASS ) {
-    v[0] = mrbc_string_new_cstr(vm, mrbc_symid_to_str( v[0].uni.cls->sym_id ));
+    v[0] = mrbc_string_new_cstr(vm, mrbc_symid_to_str( v[0].cls->sym_id ));
     return;
   }
 
-  ret = mrbc_string_new(vm, NULL, 0);
-  if( !ret.uni.string ) goto RETURN_NIL;		// ENOMEM
+  mrbc_value ret = mrbc_string_new(vm, NULL, 0);
+  if( !ret.string ) goto RETURN_NIL;		// ENOMEM
 
+  int i;
   for( i = 0; i < 2; i++ ) {
     if( i != 0 ) mrbc_string_append_cstr( &ret, ".." );
-    {
-      mrbc_value v1 = (i == 0) ? mrbc_range_first(v) : mrbc_range_last(v);
-      mrbc_value s1 = mrbc_send( vm, v, argc, &v1, "inspect", 0 );
-      mrbc_string_append( &ret, &s1 );
-      mrbc_string_delete( &s1 );
-    }
+    mrbc_value v1 = (i == 0) ? mrbc_range_first(v) : mrbc_range_last(v);
+    mrbc_value s1 = mrbc_send( vm, v, argc, &v1, "inspect", 0 );
+    mrbc_string_append( &ret, &s1 );
+    mrbc_string_delete( &s1 );
   }
 
   SET_RETURN(ret);

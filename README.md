@@ -1,10 +1,7 @@
 # snes-ruby
 
 This is an experimental repository for the SNES(Super Nintendo Entertainment System) port of mruby/c.
+Also this is work in progress.
 
 ## Requirements to build
-- Windows
-  - WDCTools requires Windows
-- [WDCTools](https://www.westerndesigncenter.com/wdc/tools.php)
-- [c99-to-c89](https://github.com/libav/c99-to-c89)
-
+This includes PVSnesLib as submodule. See https://github.com/alekmaul/pvsneslib/wiki/Compiling-from-sources.

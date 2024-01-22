@@ -82,7 +82,7 @@ typedef struct RInstance {
 
   struct RClass *cls;
   struct RKeyValueHandle ivar;
-  uint8_t data[1];
+  uint8_t data[];
 
 } mrbc_instance;
 typedef struct RInstance mrb_instance;
@@ -117,11 +117,11 @@ typedef struct RMethod {
   union {
     struct IREP *irep;	//!< to IREP for ruby proc.
     mrbc_func_t func;	//!< to C function.
-  } uni_func;
+  };
   union {
     struct RMethod *next;	//!< link to next method.
     struct RClass *cls;		//!< return value for mrbc_find_method.
-  } uni_next;
+  };
 } mrbc_method;
 
 
@@ -186,18 +186,17 @@ void mrbc_init_class(void);
   @param  obj	pointer to object
   @return	pointer to mrbc_class
 */
-static mrbc_class *find_class_by_object(const mrbc_value *obj)
+static inline mrbc_class *find_class_by_object(const mrbc_value *obj)
 {
-  mrbc_class *cls;
   assert( mrbc_type(*obj) >= 0 );
   assert( mrbc_type(*obj) <= MRBC_TT_MAXVAL );
 
-  cls = mrbc_class_tbl[ mrbc_type(*obj) ];
+  mrbc_class *cls = mrbc_class_tbl[ mrbc_type(*obj) ];
   if( !cls ) {
     switch( mrbc_type(*obj) ) {
-    case MRBC_TT_CLASS:		cls = obj->uni.cls;			break;
-    case MRBC_TT_OBJECT:	cls = obj->uni.instance->cls;	break;
-    case MRBC_TT_EXCEPTION:	cls = obj->uni.exception->cls;	break;
+    case MRBC_TT_CLASS:		cls = obj->cls;			break;
+    case MRBC_TT_OBJECT:	cls = obj->instance->cls;	break;
+    case MRBC_TT_EXCEPTION:	cls = obj->exception->cls;	break;
     default:
       assert(!"Invalid value type.");
     }

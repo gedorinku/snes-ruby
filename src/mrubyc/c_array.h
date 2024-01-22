@@ -73,18 +73,18 @@ int mrbc_array_include(const mrbc_value *ary, const mrbc_value *val);
 //================================================================
 /*! get size
 */
-static int mrbc_array_size(const mrbc_value *ary)
+static inline int mrbc_array_size(const mrbc_value *ary)
 {
-  return ary->uni.array->n_stored;
+  return ary->array->n_stored;
 }
 
 
 //================================================================
 /*! delete handle (do not decrement reference counter)
 */
-static void mrbc_array_delete_handle(mrbc_value *ary)
+static inline void mrbc_array_delete_handle(mrbc_value *ary)
 {
-  mrbc_array *h = ary->uni.array;
+  mrbc_array *h = ary->array;
 
   mrbc_raw_free(h->data);
   mrbc_raw_free(h);

@@ -21,8 +21,6 @@
 #include <stdint.h>
 //@endcond
 
-#include "int8.h"
-
 /***** Local headers ********************************************************/
 #include "value.h"
 
@@ -57,7 +55,7 @@ typedef struct RKeyValueHandle {
   union {
     mrbc_kv *data;	//!< pointer to allocated memory.
     struct VM *vm;	//!< pointer to VM (if data_size == 0)
-  } uni;
+  };
 
 } mrbc_kv_handle;
 
@@ -95,7 +93,7 @@ void mrbc_kv_dup(const mrbc_kv_handle *src, mrbc_kv_handle *dst);
 //================================================================
 /*! get size
 */
-static int mrbc_kv_size(const mrbc_kv_handle *kvh)
+static inline int mrbc_kv_size(const mrbc_kv_handle *kvh)
 {
   return kvh->n_stored;
 }
@@ -103,7 +101,7 @@ static int mrbc_kv_size(const mrbc_kv_handle *kvh)
 //================================================================
 /*! iterator constructor
 */
-static mrbc_kv_iterator mrbc_kv_iterator_new( const mrbc_kv_handle *h )
+static inline mrbc_kv_iterator mrbc_kv_iterator_new( const mrbc_kv_handle *h )
 {
   mrbc_kv_iterator ite;
 
@@ -116,7 +114,7 @@ static mrbc_kv_iterator mrbc_kv_iterator_new( const mrbc_kv_handle *h )
 //================================================================
 /*! iterator has_next?
 */
-static int mrbc_kv_i_has_next( const mrbc_kv_iterator *ite )
+static inline int mrbc_kv_i_has_next( const mrbc_kv_iterator *ite )
 {
   return ite->i < ite->target->n_stored;
 }
@@ -124,9 +122,9 @@ static int mrbc_kv_i_has_next( const mrbc_kv_iterator *ite )
 //================================================================
 /*! iterator getter
 */
-static mrbc_kv *mrbc_kv_i_next( mrbc_kv_iterator *ite )
+static inline mrbc_kv *mrbc_kv_i_next( mrbc_kv_iterator *ite )
 {
-  return &ite->target->uni.data[ ite->i++ ];
+  return &ite->target->data[ ite->i++ ];
 }
 
 

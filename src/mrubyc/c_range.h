@@ -59,25 +59,25 @@ int mrbc_range_compare(const mrbc_value *v1, const mrbc_value *v2);
 //================================================================
 /*! get first value
 */
-static mrbc_value mrbc_range_first(const mrbc_value *v)
+static inline mrbc_value mrbc_range_first(const mrbc_value *v)
 {
-  return v->uni.range->first;
+  return v->range->first;
 }
 
 //================================================================
 /*! get last value
 */
-static mrbc_value mrbc_range_last(const mrbc_value *v)
+static inline mrbc_value mrbc_range_last(const mrbc_value *v)
 {
-  return v->uni.range->last;
+  return v->range->last;
 }
 
 //================================================================
 /*! get exclude_end?
 */
-static int mrbc_range_exclude_end(const mrbc_value *v)
+static inline int mrbc_range_exclude_end(const mrbc_value *v)
 {
-  return v->uni.range->flag_exclude;
+  return v->range->flag_exclude;
 }
 
 

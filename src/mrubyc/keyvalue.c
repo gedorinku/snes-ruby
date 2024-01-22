@@ -54,7 +54,7 @@ static int binary_search(mrbc_kv_handle *kvh, mrbc_sym sym_id)
 
   while( left < right ) {
     int mid = (left + right) / 2;
-    if( kvh->uni.data[mid].sym_id < sym_id ) {
+    if( kvh->data[mid].sym_id < sym_id ) {
       left = mid + 1;
     } else {
       right = mid;
@@ -103,15 +103,15 @@ int mrbc_kv_init_handle(struct VM *vm, mrbc_kv_handle *kvh, int size)
 
   if( size == 0 ) {
     // save VM address temporary.
-    kvh->uni.vm = vm;
+    kvh->vm = vm;
 
   } else {
     // Allocate data buffer.
-    kvh->uni.data = mrbc_alloc(vm, sizeof(mrbc_kv) * size);
-    if( !kvh->uni.data ) return -1;		// ENOMEM
+    kvh->data = mrbc_alloc(vm, sizeof(mrbc_kv) * size);
+    if( !kvh->data ) return -1;		// ENOMEM
 
 #if defined(MRBC_DEBUG)
-    memcpy( kvh->uni.data->type, "KV", 2 );
+    memcpy( kvh->data->type, "KV", 2 );
 #endif
   }
 
@@ -142,7 +142,7 @@ void mrbc_kv_delete_data(mrbc_kv_handle *kvh)
 
   mrbc_kv_clear(kvh);
   kvh->data_size = 0;
-  mrbc_raw_free(kvh->uni.data);
+  mrbc_raw_free(kvh->data);
 }
 
 
@@ -156,7 +156,7 @@ void mrbc_kv_clear_vm_id(mrbc_kv_handle *kvh)
 {
   if( kvh->data_size == 0 ) return;
 
-  mrbc_kv *p1 = kvh->uni.data;
+  mrbc_kv *p1 = kvh->data;
   const mrbc_kv *p2 = p1 + kvh->n_stored;
 
   mrbc_set_vm_id( p1, 0 );
@@ -178,10 +178,10 @@ void mrbc_kv_clear_vm_id(mrbc_kv_handle *kvh)
 */
 int mrbc_kv_resize(mrbc_kv_handle *kvh, int size)
 {
-  mrbc_kv *data2 = mrbc_raw_realloc(kvh->uni.data, sizeof(mrbc_kv) * size);
+  mrbc_kv *data2 = mrbc_raw_realloc(kvh->data, sizeof(mrbc_kv) * size);
   if( !data2 ) return E_NOMEMORY_ERROR;		// ENOMEM
 
-  kvh->uni.data = data2;
+  kvh->data = data2;
   kvh->data_size = size;
 
   return 0;
@@ -205,25 +205,25 @@ int mrbc_kv_set(mrbc_kv_handle *kvh, mrbc_sym sym_id, mrbc_value *set_val)
   }
 
   // replace value ?
-  if( kvh->uni.data[idx].sym_id == sym_id ) {
-    mrbc_decref( &kvh->uni.data[idx].value );
-    kvh->uni.data[idx].value = *set_val;
+  if( kvh->data[idx].sym_id == sym_id ) {
+    mrbc_decref( &kvh->data[idx].value );
+    kvh->data[idx].value = *set_val;
     return 0;
   }
 
-  if( kvh->uni.data[idx].sym_id < sym_id ) {
+  if( kvh->data[idx].sym_id < sym_id ) {
     idx++;
   }
 
  INSERT_VALUE:
   // need alloc?
   if( kvh->data_size == 0 ) {
-    kvh->uni.data = mrbc_alloc(kvh->uni.vm, sizeof(mrbc_kv) * MRBC_KV_SIZE_INIT);
-    if( kvh->uni.data == NULL ) return E_NOMEMORY_ERROR;	// ENOMEM
+    kvh->data = mrbc_alloc(kvh->vm, sizeof(mrbc_kv) * MRBC_KV_SIZE_INIT);
+    if( kvh->data == NULL ) return E_NOMEMORY_ERROR;	// ENOMEM
     kvh->data_size = MRBC_KV_SIZE_INIT;
 
 #if defined(MRBC_DEBUG)
-    memcpy( kvh->uni.data->type, "KV", 2 );
+    memcpy( kvh->data->type, "KV", 2 );
 #endif
 
   // need resize?
@@ -236,11 +236,11 @@ int mrbc_kv_set(mrbc_kv_handle *kvh, mrbc_sym sym_id, mrbc_value *set_val)
   // need move data?
   if( idx < kvh->n_stored ) {
     int size = sizeof(mrbc_kv) * (kvh->n_stored - idx);
-    memmove( &kvh->uni.data[idx+1], &kvh->uni.data[idx], size );
+    memmove( &kvh->data[idx+1], &kvh->data[idx], size );
   }
 
-  kvh->uni.data[idx].sym_id = sym_id;
-  kvh->uni.data[idx].value = *set_val;
+  kvh->data[idx].sym_id = sym_id;
+  kvh->data[idx].value = *set_val;
   kvh->n_stored++;
 
   return 0;
@@ -259,9 +259,9 @@ mrbc_value * mrbc_kv_get(mrbc_kv_handle *kvh, mrbc_sym sym_id)
 {
   int idx = binary_search(kvh, sym_id);
   if( idx < 0 ) return NULL;
-  if( kvh->uni.data[idx].sym_id != sym_id ) return NULL;
+  if( kvh->data[idx].sym_id != sym_id ) return NULL;
 
-  return &kvh->uni.data[idx].value;
+  return &kvh->data[idx].value;
 }
 
 
@@ -278,7 +278,7 @@ int mrbc_kv_append(mrbc_kv_handle *kvh, mrbc_sym sym_id, mrbc_value *set_val)
 {
   // need alloc?
   if( kvh->data_size == 0 ) {
-    kvh->data = mrbc_alloc(kvh->uni.vm, sizeof(mrbc_kv) * MRBC_KV_SIZE_INIT);
+    kvh->data = mrbc_alloc(kvh->vm, sizeof(mrbc_kv) * MRBC_KV_SIZE_INIT);
     if( kvh->data == NULL ) return E_NOMEMORY_ERROR;	// ENOMEM
     kvh->data_size = MRBC_KV_SIZE_INIT;
 
@@ -335,11 +335,11 @@ int mrbc_kv_remove(mrbc_kv_handle *kvh, mrbc_sym sym_id)
 {
   int idx = binary_search(kvh, sym_id);
   if( idx < 0 ) return 0;
-  if( kvh->uni.data[idx].sym_id != sym_id ) return 0;
+  if( kvh->data[idx].sym_id != sym_id ) return 0;
 
-  mrbc_decref( &kvh->uni.data[idx].value );
+  mrbc_decref( &kvh->data[idx].value );
   kvh->n_stored--;
-  memmove( kvh->uni.data + idx, kvh->uni.data + idx + 1,
+  memmove( kvh->data + idx, kvh->data + idx + 1,
 	   sizeof(mrbc_kv) * (kvh->n_stored - idx) );
 
   return 0;
@@ -354,7 +354,7 @@ int mrbc_kv_remove(mrbc_kv_handle *kvh, mrbc_sym sym_id)
 */
 void mrbc_kv_clear(mrbc_kv_handle *kvh)
 {
-  mrbc_kv *p1 = kvh->uni.data;
+  mrbc_kv *p1 = kvh->data;
   const mrbc_kv *p2 = p1 + kvh->n_stored;
   while( p1 < p2 ) {
     mrbc_decref(&p1->value);

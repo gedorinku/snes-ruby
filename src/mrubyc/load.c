@@ -216,7 +216,8 @@ static mrbc_irep * load_irep_1(struct VM *vm, const uint8_t *bin, int *len, int 
   p = p_irep->pool + 2;
   for( i = 0; i < irep.plen; i++ ) {
     int siz = 0;
-    if( (p - irep.pool) > UINT16_MAX ) {
+    // FIXME: 左の項を long long にキャストしないと正しく比較できない
+    if( (long long)(p - irep.pool) > UINT16_MAX ) {
       mrbc_raise(vm, MRBC_CLASS(Exception), "Overflow IREP data offset table.");
       return NULL;
     }
@@ -346,16 +347,7 @@ void mrbc_irep_free(struct IREP *irep)
 mrbc_value mrbc_irep_pool_value(struct VM *vm, int n)
 {
   assert( vm->cur_irep->plen > n );
-  // Workaround: WDC816CCがpの上位8bitが常に0x00になる機械語を出力する。
-  // 左の項を一旦変数に入れると動く。
-  // adc	[<R0],Y
-	// sta	<L194+p2_4
-	// lda	#$0
-	// sta	<L194+p2_4+2
-  // const uint8_t *p = mrbc_irep_pool_ptr(vm->cur_irep, n);
-
-  const uint8_t *pool = vm->cur_irep->pool;
-  const uint8_t *p = pool + mrbc_irep_tbl_pools(vm->cur_irep)[(n)];
+  const uint8_t *p = mrbc_irep_pool_ptr(vm->cur_irep, n);
   mrbc_value obj;
 
   int tt = *p++;

@@ -9,11 +9,10 @@ int hal_write(int fd, const void *buf, int nbytes) {
     int l = 0;
     while (l < nbytes) {
         int size = HAL_BUF_SIZE - hal_write_buf_pos;
-        if ((nbytes - l) < size) {
-            size = (nbytes - l);
+        if (nbytes - l < size) {
+            size = nbytes - l;
         }
 
-        memset(hal_write_buf + hal_write_buf_pos, 0, size);
         memcpy(hal_write_buf + hal_write_buf_pos, (const char *)buf + l, size);
 
         l += size;
@@ -24,5 +23,5 @@ int hal_write(int fd, const void *buf, int nbytes) {
         }
     }
 
-    return 0;
+    return nbytes;
 }
