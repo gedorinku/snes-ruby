@@ -20,8 +20,6 @@
 #include <assert.h>
 //@endcond
 
-#include "int8.h"
-
 /***** Local headers ********************************************************/
 #include "alloc.h"
 #include "value.h"
@@ -87,7 +85,7 @@ mrbc_class * mrbc_define_class(struct VM *vm, const char *name, mrbc_class *supe
 {
   // nested class?
   if( vm && mrbc_type(vm->cur_regs[0]) == MRBC_TT_CLASS ) {
-    assert(vm->target_class == vm->cur_regs[0].uni.cls );
+    assert(vm->target_class == vm->cur_regs[0].cls );
     return mrbc_define_class_under(vm, vm->target_class, name, super);
   }
 
@@ -103,7 +101,7 @@ mrbc_class * mrbc_define_class(struct VM *vm, const char *name, mrbc_class *supe
     if( mrbc_type(*val) != MRBC_TT_CLASS ) {
       mrbc_raisef(vm, MRBC_CLASS(TypeError), "%s is not a class", name);
     }
-    return val->uni.cls;
+    return val->cls;
   }
 
   // create a new class.
@@ -119,10 +117,7 @@ mrbc_class * mrbc_define_class(struct VM *vm, const char *name, mrbc_class *supe
 #endif
 
   // register to global constant
-  // mrbc_value set_val = {.tt = MRBC_TT_CLASS, .uni = { .cls = cls }};
-  mrbc_value set_val = {.tt = MRBC_TT_CLASS};
-  set_val.uni.cls = cls;
-  mrbc_set_const( sym_id, &set_val);
+  mrbc_set_const( sym_id, &(mrbc_value){.tt = MRBC_TT_CLASS, .cls = cls});
 
   return cls;
 }
@@ -149,7 +144,7 @@ mrbc_class * mrbc_define_class_under(struct VM *vm, const mrbc_class *outer, con
   const mrbc_value *val = mrbc_get_class_const( outer, sym_id );
   if( val ) {
     assert( mrbc_type(*val) == MRBC_TT_CLASS );
-    return val->uni.cls;
+    return val->cls;
   }
 
   // create a new nested class.
@@ -166,10 +161,8 @@ mrbc_class * mrbc_define_class_under(struct VM *vm, const mrbc_class *outer, con
 
   // register to global constant
   // (note) override cls->sym_id in this function.
-  mrbc_value set_val = {.tt = MRBC_TT_CLASS};
-  set_val.uni.cls = cls;
   mrbc_set_class_const( outer, sym_id,
-			&set_val);
+			&(mrbc_value){.tt = MRBC_TT_CLASS, .cls = cls});
 
   return cls;
 }
@@ -196,8 +189,8 @@ void mrbc_define_method(struct VM *vm, mrbc_class *cls, const char *name, mrbc_f
   if( method->sym_id < 0 ) {
     mrbc_raise(vm, MRBC_CLASS(Exception), "Overflow MAX_SYMBOLS_COUNT");
   }
-  method->uni_func.func = cfunc;
-  method->uni_next.next = cls->method_link;
+  method->func = cfunc;
+  method->next = cls->method_link;
   cls->method_link = method;
 }
 
@@ -213,17 +206,17 @@ void mrbc_define_method(struct VM *vm, mrbc_class *cls, const char *name, mrbc_f
 mrbc_value mrbc_instance_new(struct VM *vm, mrbc_class *cls, int size)
 {
   mrbc_value v = {.tt = MRBC_TT_OBJECT};
-  v.uni.instance = mrbc_alloc(vm, sizeof(mrbc_instance) + size);
-  if( v.uni.instance == NULL ) return v;	// ENOMEM
+  v.instance = mrbc_alloc(vm, sizeof(mrbc_instance) + size);
+  if( v.instance == NULL ) return v;	// ENOMEM
 
-  if( mrbc_kv_init_handle(vm, &v.uni.instance->ivar, 0) != 0 ) {
-    mrbc_raw_free(v.uni.instance);
-    v.uni.instance = NULL;
+  if( mrbc_kv_init_handle(vm, &v.instance->ivar, 0) != 0 ) {
+    mrbc_raw_free(v.instance);
+    v.instance = NULL;
     return v;
   }
 
-  MRBC_INIT_OBJECT_HEADER( v.uni.instance, "IN" );
-  v.uni.instance->cls = cls;
+  MRBC_INIT_OBJECT_HEADER( v.instance, "IN" );
+  v.instance->cls = cls;
 
   return v;
 }
@@ -236,8 +229,8 @@ mrbc_value mrbc_instance_new(struct VM *vm, mrbc_class *cls, int size)
 */
 void mrbc_instance_delete(mrbc_value *v)
 {
-  mrbc_kv_delete_data( &v->uni.instance->ivar );
-  mrbc_raw_free( v->uni.instance );
+  mrbc_kv_delete_data( &v->instance->ivar );
+  mrbc_raw_free( v->instance );
 }
 
 
@@ -251,7 +244,7 @@ void mrbc_instance_delete(mrbc_value *v)
 void mrbc_instance_setiv(mrbc_value *obj, mrbc_sym sym_id, mrbc_value *v)
 {
   mrbc_incref(v);
-  mrbc_kv_set( &obj->uni.instance->ivar, sym_id, v );
+  mrbc_kv_set( &obj->instance->ivar, sym_id, v );
 }
 
 
@@ -264,7 +257,7 @@ void mrbc_instance_setiv(mrbc_value *obj, mrbc_sym sym_id, mrbc_value *v)
 */
 mrbc_value mrbc_instance_getiv(mrbc_value *obj, mrbc_sym sym_id)
 {
-  mrbc_value *v = mrbc_kv_get( &obj->uni.instance->ivar, sym_id );
+  mrbc_value *v = mrbc_kv_get( &obj->instance->ivar, sym_id );
   if( !v ) return mrbc_nil_value();
 
   mrbc_incref(v);
@@ -280,8 +273,8 @@ mrbc_value mrbc_instance_getiv(mrbc_value *obj, mrbc_sym sym_id)
 */
 void mrbc_instance_clear_vm_id(mrbc_value *v)
 {
-  mrbc_set_vm_id( v->uni.instance, 0 );
-  mrbc_kv_clear_vm_id( &v->uni.instance->ivar );
+  mrbc_set_vm_id( v->instance, 0 );
+  mrbc_kv_clear_vm_id( &v->instance->ivar );
 }
 #endif
 
@@ -297,19 +290,19 @@ mrbc_value mrbc_proc_new(struct VM *vm, void *irep)
 {
   mrbc_value val = {.tt = MRBC_TT_PROC};
 
-  val.uni.proc = mrbc_alloc(vm, sizeof(mrbc_proc));
-  if( !val.uni.proc ) return val;	// ENOMEM
+  val.proc = mrbc_alloc(vm, sizeof(mrbc_proc));
+  if( !val.proc ) return val;	// ENOMEM
 
-  MRBC_INIT_OBJECT_HEADER( val.uni.proc, "PR" );
-  val.uni.proc->callinfo = vm->callinfo_tail;
+  MRBC_INIT_OBJECT_HEADER( val.proc, "PR" );
+  val.proc->callinfo = vm->callinfo_tail;
 
   if( mrbc_type(vm->cur_regs[0]) == MRBC_TT_PROC ) {
-    val.uni.proc->callinfo_self = vm->cur_regs[0].uni.proc->callinfo_self;
+    val.proc->callinfo_self = vm->cur_regs[0].proc->callinfo_self;
   } else {
-    val.uni.proc->callinfo_self = vm->callinfo_tail;
+    val.proc->callinfo_self = vm->callinfo_tail;
   }
 
-  val.uni.proc->irep = irep;
+  val.proc->irep = irep;
 
   return val;
 }
@@ -322,7 +315,7 @@ mrbc_value mrbc_proc_new(struct VM *vm, void *irep)
 */
 void mrbc_proc_delete(mrbc_value *val)
 {
-  mrbc_raw_free(val->uni.proc);
+  mrbc_raw_free(val->proc);
 }
 
 
@@ -334,7 +327,7 @@ void mrbc_proc_delete(mrbc_value *val)
 */
 void mrbc_proc_clear_vm_id(mrbc_value *v)
 {
-  mrbc_set_vm_id( v->uni.proc, 0 );
+  mrbc_set_vm_id( v->proc, 0 );
 }
 #endif
 
@@ -371,10 +364,10 @@ mrbc_method * mrbc_find_method( mrbc_method *r_method, mrbc_class *cls, mrbc_sym
 {
   do {
     mrbc_method *method;
-    for( method = cls->method_link; method != 0; method = method->uni_next.next ) {
+    for( method = cls->method_link; method != 0; method = method->next ) {
       if( method->sym_id == sym_id ) {
 	*r_method = *method;
-	r_method->uni_next.cls = cls;
+	r_method->cls = cls;
 	return r_method;
       }
     }
@@ -396,14 +389,10 @@ mrbc_method * mrbc_find_method( mrbc_method *r_method, mrbc_class *cls, mrbc_sym
     if( c->method_symbols[right] == sym_id ) {
       *r_method = (mrbc_method){
 	.type = 'm',
-	.c_func = 2
-	// .sym_id = sym_id
-      };
-      // Workaround: ERROR 41: initializer not a constant
-      r_method->sym_id = sym_id;
-
-      r_method->uni_func.func = c->method_functions[right];
-      r_method->uni_next.cls = cls;
+	.c_func = 2,
+	.sym_id = sym_id,
+	.func = c->method_functions[right],
+	.cls = cls };
       return r_method;
     }
 
@@ -430,7 +419,7 @@ mrbc_class * mrbc_get_class_by_name( const char *name )
   if( obj == NULL ) return NULL;
   if( mrbc_type(*obj) != MRBC_TT_CLASS ) return NULL;
 
-  return obj->uni.cls;
+  return obj->cls;
 }
 
 
@@ -487,7 +476,7 @@ mrbc_value mrbc_send( struct VM *vm, mrbc_value *v, int reg_ofs,
   va_end(ap);
 
   // call method.
-  method.uni_func.func(vm, regs, argc);
+  method.func(vm, regs, argc);
   mrbc_value ret = regs[0];
 
   for(; i >= 0; i-- ) {
@@ -553,83 +542,83 @@ void mrbc_init_class(void)
   void mrbc_init_class_math(void);
   mrbc_value cls = {.tt = MRBC_TT_CLASS};
 
-  cls.uni.cls = MRBC_CLASS(Object);
+  cls.cls = MRBC_CLASS(Object);
   mrbc_set_const( MRBC_SYM(Object), &cls );
 
-  cls.uni.cls = MRBC_CLASS(NilClass);
+  cls.cls = MRBC_CLASS(NilClass);
   mrbc_set_const( MRBC_SYM(NilClass), &cls );
 
-  cls.uni.cls = MRBC_CLASS(FalseClass);
+  cls.cls = MRBC_CLASS(FalseClass);
   mrbc_set_const( MRBC_SYM(FalseClass), &cls );
 
-  cls.uni.cls = MRBC_CLASS(TrueClass);
+  cls.cls = MRBC_CLASS(TrueClass);
   mrbc_set_const( MRBC_SYM(TrueClass), &cls );
 
-  cls.uni.cls = MRBC_CLASS(Integer);
+  cls.cls = MRBC_CLASS(Integer);
   mrbc_set_const( MRBC_SYM(Integer), &cls );
 
 #if MRBC_USE_FLOAT
-  cls.uni.cls = MRBC_CLASS(Float);
+  cls.cls = MRBC_CLASS(Float);
   mrbc_set_const( MRBC_SYM(Float), &cls );
 #endif
 
-  cls.uni.cls = MRBC_CLASS(Symbol);
+  cls.cls = MRBC_CLASS(Symbol);
   mrbc_set_const( MRBC_SYM(Symbol), &cls );
 
-  cls.uni.cls = MRBC_CLASS(Proc);
+  cls.cls = MRBC_CLASS(Proc);
   mrbc_set_const( MRBC_SYM(Proc), &cls );
 
-  cls.uni.cls = MRBC_CLASS(Array);
+  cls.cls = MRBC_CLASS(Array);
   mrbc_set_const( MRBC_SYM(Array), &cls );
 
 #if MRBC_USE_STRING
-  cls.uni.cls = MRBC_CLASS(String);
+  cls.cls = MRBC_CLASS(String);
   mrbc_set_const( MRBC_SYM(String), &cls );
 #endif
 
-  cls.uni.cls = MRBC_CLASS(Range);
+  cls.cls = MRBC_CLASS(Range);
   mrbc_set_const( MRBC_SYM(Range), &cls );
 
-  cls.uni.cls = MRBC_CLASS(Hash);
+  cls.cls = MRBC_CLASS(Hash);
   mrbc_set_const( MRBC_SYM(Hash), &cls );
 
 #if MRBC_USE_MATH
-  cls.uni.cls = MRBC_CLASS(Math);
+  cls.cls = MRBC_CLASS(Math);
   mrbc_set_const( MRBC_SYM(Math), &cls );
   mrbc_init_class_math();
 #endif
 
-  cls.uni.cls = MRBC_CLASS(Exception);
+  cls.cls = MRBC_CLASS(Exception);
   mrbc_set_const( MRBC_SYM(Exception), &cls );
 
-  cls.uni.cls = MRBC_CLASS(NoMemoryError);
+  cls.cls = MRBC_CLASS(NoMemoryError);
   mrbc_set_const( MRBC_SYM(NoMemoryError), &cls );
 
-  cls.uni.cls = MRBC_CLASS(StandardError);
+  cls.cls = MRBC_CLASS(StandardError);
   mrbc_set_const( MRBC_SYM(StandardError), &cls );
 
-  cls.uni.cls = MRBC_CLASS(ArgumentError);
+  cls.cls = MRBC_CLASS(ArgumentError);
   mrbc_set_const( MRBC_SYM(ArgumentError), &cls );
 
-  cls.uni.cls = MRBC_CLASS(IndexError);
+  cls.cls = MRBC_CLASS(IndexError);
   mrbc_set_const( MRBC_SYM(IndexError), &cls );
 
-  cls.uni.cls = MRBC_CLASS(NameError);
+  cls.cls = MRBC_CLASS(NameError);
   mrbc_set_const( MRBC_SYM(NameError), &cls );
 
-  cls.uni.cls = MRBC_CLASS(NoMethodError);
+  cls.cls = MRBC_CLASS(NoMethodError);
   mrbc_set_const( MRBC_SYM(NoMethodError), &cls );
 
-  cls.uni.cls = MRBC_CLASS(RangeError);
+  cls.cls = MRBC_CLASS(RangeError);
   mrbc_set_const( MRBC_SYM(RangeError), &cls );
 
-  cls.uni.cls = MRBC_CLASS(RuntimeError);
+  cls.cls = MRBC_CLASS(RuntimeError);
   mrbc_set_const( MRBC_SYM(RuntimeError), &cls );
 
-  cls.uni.cls = MRBC_CLASS(TypeError);
+  cls.cls = MRBC_CLASS(TypeError);
   mrbc_set_const( MRBC_SYM(TypeError), &cls );
 
-  cls.uni.cls = MRBC_CLASS(ZeroDivisionError);
+  cls.cls = MRBC_CLASS(ZeroDivisionError);
   mrbc_set_const( MRBC_SYM(ZeroDivisionError), &cls );
 
   mrbc_run_mrblib(mrblib_bytecode);

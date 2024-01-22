@@ -74,7 +74,7 @@ static int sym_index_pos;	// point to the last(free) sym_index array.
   @param  str		Target string.
   @return uint16_t	Hash value.
 */
-static uint16_t calc_hash(const char *str)
+static inline uint16_t calc_hash(const char *str)
 {
   uint16_t h = 0;
 
@@ -317,13 +317,11 @@ static void c_symbol_all_symbols(struct VM *vm, mrbc_value v[], int argc)
 
   int i;
   for( i = 0; i < sizeof(builtin_symbols) / sizeof(builtin_symbols[0]); i++ ) {
-    mrbc_value pv = mrbc_symbol_value(i);
-    mrbc_array_push(&ret, &pv);
+    mrbc_array_push(&ret, &mrbc_symbol_value(i));
   }
 
   for( i = 0; i < sym_index_pos; i++ ) {
-    mrbc_value pv = mrbc_symbol_value(i + OFFSET_BUILTIN_SYMBOL);
-    mrbc_array_push(&ret, &pv);
+    mrbc_array_push(&ret, &mrbc_symbol_value(i + OFFSET_BUILTIN_SYMBOL));
   }
   SET_RETURN(ret);
 }
@@ -347,7 +345,7 @@ static void c_symbol_inspect(struct VM *vm, mrbc_value v[], int argc)
 static void c_symbol_to_s(struct VM *vm, mrbc_value v[], int argc)
 {
   if( v[0].tt == MRBC_TT_CLASS ) {
-    v[0] = mrbc_string_new_cstr(vm, mrbc_symid_to_str( v[0].uni.cls->sym_id ));
+    v[0] = mrbc_string_new_cstr(vm, mrbc_symid_to_str( v[0].cls->sym_id ));
     return;
   }
 

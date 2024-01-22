@@ -23,7 +23,6 @@
 #include <stdint.h>
 //@endcond
 
-#include "int8.h"
 
 /***** Local headers ********************************************************/
 #include "value.h"
@@ -56,7 +55,7 @@ typedef struct IREP {
   const uint8_t *inst;		//!< pointer to instruction in RITE binary
   const uint8_t *pool;		//!< pointer to pool in RITE binary
 
-  uint8_t data[1];		//!< variable data. (see load.c)
+  uint8_t data[];		//!< variable data. (see load.c)
 				//!<  mrbc_sym   tbl_syms[slen]
 				//!<  uint16_t   tbl_pools[plen]
 				//!<  mrbc_irep *tbl_ireps[rlen]
@@ -78,11 +77,9 @@ typedef struct IREP mrb_irep;
 #define mrbc_irep_tbl_pools(irep) \
   ( (uint16_t *) ((irep)->data + (irep)->slen * sizeof(mrbc_sym)) )
 
-// Workaround: mrbc_irep_pool_ptr(vm->cur_irep, n)のような使い方をするとWDC816CCがpの上位8bitが常に0x00になる機械語を出力する。
-// 左の項を一旦変数に入れると動く。
 //! get a pointer to n'th pool data.
-// #define mrbc_irep_pool_ptr(irep, n) \
-//   ( (irep)->pool + mrbc_irep_tbl_pools(irep)[(n)] )
+#define mrbc_irep_pool_ptr(irep, n) \
+  ( (irep)->pool + mrbc_irep_tbl_pools(irep)[(n)] )
 
 
 //! get a child irep table pointer.
@@ -154,7 +151,7 @@ typedef struct VM {
   mrbc_proc	  *ret_blk;		//!< Return block.
 
   mrbc_value	  exception;		//!< Raised exception or nil.
-  mrbc_value      regs[1];
+  mrbc_value      regs[];
 } mrbc_vm;
 typedef struct VM mrb_vm;
 
@@ -210,7 +207,7 @@ int mrbc_vm_run(struct VM *vm);
   @param  s	Pointer to memory.
   @return	16bit unsigned int value.
 */
-static uint16_t bin_to_uint16( const void *s )
+static inline uint16_t bin_to_uint16( const void *s )
 {
 #if defined(MRBC_LITTLE_ENDIAN) && !defined(MRBC_REQUIRE_32BIT_ALIGNMENT)
   // Little endian, no alignment.
@@ -242,7 +239,7 @@ static uint16_t bin_to_uint16( const void *s )
   @param  s	Pointer to memory.
   @return	32bit unsigned int value.
 */
-static uint32_t bin_to_uint32( const void *s )
+static inline uint32_t bin_to_uint32( const void *s )
 {
 #if defined(MRBC_LITTLE_ENDIAN) && !defined(MRBC_REQUIRE_32BIT_ALIGNMENT)
   // Little endian, no alignment.
@@ -277,7 +274,7 @@ static uint32_t bin_to_uint32( const void *s )
   @param  s	Pointer to memory.
   @return	64bit int value.
 */
-static int64_t bin_to_int64( const void *s )
+static inline int64_t bin_to_int64( const void *s )
 {
 #if defined(MRBC_LITTLE_ENDIAN) && !defined(MRBC_REQUIRE_64BIT_ALIGNMENT)
   // Little endian, no alignment.
@@ -328,7 +325,7 @@ static int64_t bin_to_int64( const void *s )
   @param  s	Pointer to memory.
   @return	double value.
 */
-static double bin_to_double64( const void *s )
+static inline double bin_to_double64( const void *s )
 {
 #if defined(MRBC_LITTLE_ENDIAN) && !defined(MRBC_REQUIRE_64BIT_ALIGNMENT)
   // Little endian, no alignment.
@@ -377,7 +374,7 @@ static double bin_to_double64( const void *s )
   @param  v	Source value.
   @param  d	Pointer to memory.
 */
-static void uint32_to_bin( uint32_t v, void *d )
+static inline void uint32_to_bin( uint32_t v, void *d )
 {
   uint8_t *p = (uint8_t *)d + 3;
   *p-- = 0xff & v;
@@ -396,7 +393,7 @@ static void uint32_to_bin( uint32_t v, void *d )
   @param  v	Source value.
   @param  d	Pointer to memory.
 */
-static void uint16_to_bin( uint16_t v, void *d )
+static inline void uint16_to_bin( uint16_t v, void *d )
 {
   uint8_t *p = (uint8_t *)d;
   *p++ = (v >> 8);

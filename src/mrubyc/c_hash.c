@@ -83,7 +83,7 @@
 */
 mrbc_value mrbc_hash_new(struct VM *vm, int size)
 {
-  mrbc_value value = {MRBC_TT_HASH}, *data;
+  mrbc_value value = {.tt = MRBC_TT_HASH};
 
   /*
     Allocate handle and data buffer.
@@ -91,7 +91,7 @@ mrbc_value mrbc_hash_new(struct VM *vm, int size)
   mrbc_hash *h = mrbc_alloc(vm, sizeof(mrbc_hash));
   if( !h ) return value;	// ENOMEM
 
-  data = mrbc_alloc(vm, sizeof(mrbc_value) * size * 2);
+  mrbc_value *data = mrbc_alloc(vm, sizeof(mrbc_value) * size * 2);
   if( !data ) {			// ENOMEM
     mrbc_raw_free( h );
     return value;
@@ -102,7 +102,7 @@ mrbc_value mrbc_hash_new(struct VM *vm, int size)
   h->n_stored = 0;
   h->data = data;
 
-  value.uni.hash = h;
+  value.hash = h;
   return value;
 }
 
@@ -129,8 +129,8 @@ void mrbc_hash_delete(mrbc_value *hash)
 */
 mrbc_value * mrbc_hash_search(const mrbc_value *hash, const mrbc_value *key)
 {
-  mrbc_value *p1 = hash->uni.hash->data;
-  const mrbc_value *p2 = p1 + hash->uni.hash->n_stored;
+  mrbc_value *p1 = hash->hash->data;
+  const mrbc_value *p2 = p1 + hash->hash->n_stored;
 
   while( p1 < p2 ) {
     if( mrbc_compare(p1, key) == 0 ) return p1;
@@ -151,8 +151,8 @@ mrbc_value * mrbc_hash_search(const mrbc_value *hash, const mrbc_value *key)
 */
 mrbc_value * mrbc_hash_search_by_id(const mrbc_value *hash, mrbc_sym sym_id)
 {
-  mrbc_value *p1 = hash->uni.hash->data;
-  const mrbc_value *p2 = p1 + hash->uni.hash->n_stored;
+  mrbc_value *p1 = hash->hash->data;
+  const mrbc_value *p2 = p1 + hash->hash->n_stored;
 
   while( p1 < p2 ) {
     if( mrbc_type(*p1) == MRBC_TT_SYMBOL &&
@@ -217,16 +217,13 @@ mrbc_value mrbc_hash_get(const mrbc_value *hash, const mrbc_value *key)
 */
 mrbc_value mrbc_hash_remove(mrbc_value *hash, const mrbc_value *key)
 {
-  mrbc_value *v, val;
-  mrbc_hash *h;
-
-  v = mrbc_hash_search(hash, key);
+  mrbc_value *v = mrbc_hash_search(hash, key);
   if( v == NULL ) return mrbc_nil_value();
 
   mrbc_decref(v);		// key
-  val = v[1];	// value
+  mrbc_value val = v[1];	// value
 
-  h = hash->uni.hash;
+  mrbc_hash *h = hash->hash;
   h->n_stored -= 2;
 
   memmove(v, v+2, (char*)(h->data + h->n_stored) - (char*)v);
@@ -248,13 +245,12 @@ mrbc_value mrbc_hash_remove(mrbc_value *hash, const mrbc_value *key)
 */
 mrbc_value mrbc_hash_remove_by_id(mrbc_value *hash, mrbc_sym sym_id)
 {
-  mrbc_value *v = mrbc_hash_search_by_id(hash, sym_id), empty = {MRBC_TT_EMPTY}, val;
-  mrbc_hash *h;
-  if( !v ) return empty;
+  mrbc_value *v = mrbc_hash_search_by_id(hash, sym_id);
+  if( !v ) return (mrbc_value){.tt = MRBC_TT_EMPTY};
 
-  val = v[1];	// value
+  mrbc_value val = v[1];	// value
 
-  h = hash->uni.hash;
+  mrbc_hash *h = hash->hash;
   h->n_stored -= 2;
 
   memmove(v, v+2, (char*)(h->data + h->n_stored) - (char*)v);
@@ -288,11 +284,10 @@ void mrbc_hash_clear(mrbc_value *hash)
 */
 int mrbc_hash_compare(const mrbc_value *v1, const mrbc_value *v2)
 {
-  mrbc_value *d1;
-  int i;
-  if( v1->uni.hash->n_stored != v2->uni.hash->n_stored ) return 1;
+  if( v1->hash->n_stored != v2->hash->n_stored ) return 1;
 
-  d1 = v1->uni.hash->data;
+  mrbc_value *d1 = v1->hash->data;
+  int i;
   for( i = 0; i < mrbc_hash_size(v1); i++, d1++ ) {
     mrbc_value *d2 = mrbc_hash_search(v2, d1);	// check key
     if( d2 == NULL ) return 1;
@@ -312,20 +307,16 @@ int mrbc_hash_compare(const mrbc_value *v1, const mrbc_value *v2)
 mrbc_value mrbc_hash_dup( struct VM *vm, mrbc_value *src )
 {
   mrbc_value ret = mrbc_hash_new(vm, mrbc_hash_size(src));
-  if( ret.uni.hash == NULL ) return ret;		// ENOMEM
+  if( ret.hash == NULL ) return ret;		// ENOMEM
 
-  {
-    mrbc_hash *h = src->uni.hash;
-    memcpy( ret.uni.hash->data, h->data, sizeof(mrbc_value) * h->n_stored );
-    ret.uni.hash->n_stored = h->n_stored;
+  mrbc_hash *h = src->hash;
+  memcpy( ret.hash->data, h->data, sizeof(mrbc_value) * h->n_stored );
+  ret.hash->n_stored = h->n_stored;
 
-    {
-      mrbc_value *p1 = h->data;
-      const mrbc_value *p2 = p1 + h->n_stored;
-      while( p1 < p2 ) {
-        mrbc_incref(p1++);
-      }
-    }
+  mrbc_value *p1 = h->data;
+  const mrbc_value *p2 = p1 + h->n_stored;
+  while( p1 < p2 ) {
+    mrbc_incref(p1++);
   }
 
   // TODO: dup other members.
@@ -356,11 +347,9 @@ static void c_hash_get(struct VM *vm, mrbc_value v[], int argc)
     return;
   }
 
-  {
-    mrbc_value val = mrbc_hash_get(&v[0], &v[1]);
-    mrbc_incref(&val);
-    SET_RETURN(val);
-  }
+  mrbc_value val = mrbc_hash_get(&v[0], &v[1]);
+  mrbc_incref(&val);
+  SET_RETURN(val);
 }
 
 
@@ -374,13 +363,11 @@ static void c_hash_set(struct VM *vm, mrbc_value v[], int argc)
     return;
   }
 
-  {
-    mrbc_value *v1 = &v[1];
-    mrbc_value *v2 = &v[2];
-    mrbc_hash_set(v, v1, v2);
-    v1->tt = MRBC_TT_EMPTY;
-    v2->tt = MRBC_TT_EMPTY;
-  }
+  mrbc_value *v1 = &v[1];
+  mrbc_value *v2 = &v[2];
+  mrbc_hash_set(v, v1, v2);
+  v1->tt = MRBC_TT_EMPTY;
+  v2->tt = MRBC_TT_EMPTY;
 }
 
 
@@ -587,45 +574,39 @@ static void c_hash_values(struct VM *vm, mrbc_value v[], int argc)
 static void c_hash_inspect(struct VM *vm, mrbc_value v[], int argc)
 {
   if( v[0].tt == MRBC_TT_CLASS ) {
-    v[0] = mrbc_string_new_cstr(vm, mrbc_symid_to_str( v[0].uni.cls->sym_id ));
+    v[0] = mrbc_string_new_cstr(vm, mrbc_symid_to_str( v[0].cls->sym_id ));
     return;
   }
 
-  {
-    mrbc_value ret = mrbc_string_new_cstr(vm, "{");
-    mrbc_hash_iterator ite;
-    int flag_first;
-    if( !ret.uni.string ) goto RETURN_NIL;		// ENOMEM
+  mrbc_value ret = mrbc_string_new_cstr(vm, "{");
+  if( !ret.string ) goto RETURN_NIL;		// ENOMEM
 
-    ite = mrbc_hash_iterator_new(v);
-    flag_first = 1;
+  mrbc_hash_iterator ite = mrbc_hash_iterator_new(v);
+  int flag_first = 1;
 
-    while( mrbc_hash_i_has_next(&ite) ) {
-      if( !flag_first ) mrbc_string_append_cstr( &ret, ", " );
-      flag_first = 0;
-      {
-        mrbc_value *kv = mrbc_hash_i_next(&ite);
+  while( mrbc_hash_i_has_next(&ite) ) {
+    if( !flag_first ) mrbc_string_append_cstr( &ret, ", " );
+    flag_first = 0;
+    mrbc_value *kv = mrbc_hash_i_next(&ite);
 
-        mrbc_value s1 = mrbc_send( vm, v, argc, &kv[0], "inspect", 0 );
-        mrbc_string_append( &ret, &s1 );
-        mrbc_string_delete( &s1 );
+    mrbc_value s1 = mrbc_send( vm, v, argc, &kv[0], "inspect", 0 );
+    mrbc_string_append( &ret, &s1 );
+    mrbc_string_delete( &s1 );
 
-        mrbc_string_append_cstr( &ret, "=>" );
+    mrbc_string_append_cstr( &ret, "=>" );
 
-        s1 = mrbc_send( vm, v, argc, &kv[1], "inspect", 0 );
-        mrbc_string_append( &ret, &s1 );
-        mrbc_string_delete( &s1 );
-      }
-    }
-
-    mrbc_string_append_cstr( &ret, "}" );
-
-    SET_RETURN(ret);
-    return;
-
-  RETURN_NIL:
-    SET_NIL_RETURN();
+    s1 = mrbc_send( vm, v, argc, &kv[1], "inspect", 0 );
+    mrbc_string_append( &ret, &s1 );
+    mrbc_string_delete( &s1 );
   }
+
+  mrbc_string_append_cstr( &ret, "}" );
+
+  SET_RETURN(ret);
+  return;
+
+ RETURN_NIL:
+  SET_NIL_RETURN();
 }
 #endif
 

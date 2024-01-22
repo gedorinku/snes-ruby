@@ -17,7 +17,6 @@
 #include "vm_config.h"
 #include <stdint.h>
 #include <stdarg.h>
-#include "va_copy.h"
 #include <string.h>
 #include <assert.h>
 #if MRBC_USE_FLOAT
@@ -441,21 +440,21 @@ int mrbc_print_sub(const mrbc_value *v)
   case MRBC_TT_NIL:					break;
   case MRBC_TT_FALSE:	mrbc_print("false");		break;
   case MRBC_TT_TRUE:	mrbc_print("true");		break;
-  case MRBC_TT_INTEGER:	mrbc_printf("%D", v->uni.i);	break;
+  case MRBC_TT_INTEGER:	mrbc_printf("%D", v->i);	break;
 #if MRBC_USE_FLOAT
-  case MRBC_TT_FLOAT:	mrbc_printf("%g", v->uni.d);	break;
+  case MRBC_TT_FLOAT:	mrbc_printf("%g", v->d);	break;
 #endif
   case MRBC_TT_SYMBOL:  mrbc_print(mrbc_symbol_cstr(v));		break;
-  case MRBC_TT_CLASS:	mrbc_print_nested_symbol( v->uni.cls->sym_id );	break;
+  case MRBC_TT_CLASS:	mrbc_print_nested_symbol( v->cls->sym_id );	break;
 
   case MRBC_TT_OBJECT:
     mrbc_printf("#<");
     mrbc_print_nested_symbol( find_class_by_object(v)->sym_id );
-    mrbc_printf(":%08x>", v->uni.instance );
+    mrbc_printf(":%08x>", v->instance );
     break;
 
   case MRBC_TT_PROC:
-    mrbc_printf("#<Proc:%08x>", v->uni.proc );
+    mrbc_printf("#<Proc:%08x>", v->proc );
     //mrbc_printf("#<Proc:%08x, callinfo=%p>", v->proc, v->proc->callinfo );
     break;
 
@@ -500,14 +499,14 @@ int mrbc_print_sub(const mrbc_value *v)
   } break;
 
   case MRBC_TT_HANDLE:
-    mrbc_printf("#<Handle:%08x>", v->uni.handle );
+    mrbc_printf("#<Handle:%08x>", v->handle );
     break;
 
   case MRBC_TT_EXCEPTION:
-    mrbc_printf("#<%s: %s>", mrbc_symid_to_str(v->uni.exception->cls->sym_id),
-		 v->uni.exception->message ?
-		   (const char *)v->uni.exception->message :
-		   mrbc_symid_to_str(v->uni.exception->cls->sym_id) );
+    mrbc_printf("#<%s: %s>", mrbc_symid_to_str(v->exception->cls->sym_id),
+		 v->exception->message ?
+		   (const char *)v->exception->message :
+		   mrbc_symid_to_str(v->exception->cls->sym_id) );
     break;
 
   default:
@@ -875,7 +874,7 @@ int mrbc_printf_pointer( mrbc_printf_t *pf, void *ptr )
 #if defined(UINTPTR_MAX)
   uintptr_t v = (uintptr_t)ptr;
 #else
-  long v = (long)ptr; // regal (void* to int), but implementation defined.
+  int v = (int)ptr; // regal (void* to int), but implementation defined.
 #endif
   int n = sizeof(ptr) * 2;
   if( n > 8 ) n = 8;

@@ -1,0 +1,3 @@
+[submodule "pvsneslib"]
+	path = pvsneslib
+	url = https://github.com/gedorinku/pvsneslib.git

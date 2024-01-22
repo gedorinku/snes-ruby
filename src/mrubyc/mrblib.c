@@ -1,5 +1,4 @@
 #include <stdint.h>
-#include "int8.h"
 #ifdef __cplusplus
 extern
 #endif

@@ -15,8 +15,6 @@
 #ifndef MRBC_SRC_VM_CONFIG_H_
 #define MRBC_SRC_VM_CONFIG_H_
 
-#include "mem_kwd.h"
-
 // maximum number of VMs
 #if !defined(MAX_VM_COUNT)
 #define MAX_VM_COUNT 5

@@ -107,7 +107,7 @@ int mrbc_set_class_const( const struct RClass *cls, mrbc_sym sym_id, mrbc_value 
   make_nested_symbol_s( buf, cls->sym_id, sym_id );
   mrbc_sym id = mrbc_symbol( mrbc_symbol_new( 0, buf ));
   if( v->tt == MRBC_TT_CLASS ) {
-    v->uni.cls->sym_id = id;
+    v->cls->sym_id = id;
   }
 
   return mrbc_set_const( id, v );
@@ -155,7 +155,7 @@ mrbc_value * mrbc_get_class_const( const struct RClass *cls, mrbc_sym sym_id )
     mrbc_separate_nested_symid( cls->sym_id, &id, 0 );
     mrbc_value *v = mrbc_kv_get( &handle_const, id );
     assert( v->tt == MRBC_TT_CLASS );
-    cls = v->uni.cls;
+    cls = v->cls;
   }
 
   return 0;
@@ -259,7 +259,7 @@ void mrbc_debug_dump_const( void )
     if( mrbc_type(kv->value) <= MRBC_TT_INC_DEC_THRESHOLD ) {
       mrbc_printf(".tt=%d\n", mrbc_type(kv->value));
     } else {
-      mrbc_printf(".tt=%d.ref=%d\n", mrbc_type(kv->value), kv->value.uni.obj->ref_count);
+      mrbc_printf(".tt=%d.ref=%d\n", mrbc_type(kv->value), kv->value.obj->ref_count);
     }
   }
 }
@@ -284,7 +284,7 @@ void mrbc_debug_dump_global( void )
     if( mrbc_type(kv->value) <= MRBC_TT_INC_DEC_THRESHOLD ) {
       mrbc_printf(" .tt=%d\n", mrbc_type(kv->value));
     } else {
-      mrbc_printf(" .tt=%d refcnt=%d\n", mrbc_type(kv->value), kv->value.uni.obj->ref_count);
+      mrbc_printf(" .tt=%d refcnt=%d\n", mrbc_type(kv->value), kv->value.obj->ref_count);
     }
   }
 }
