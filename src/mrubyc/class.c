@@ -185,7 +185,10 @@ void mrbc_define_method(struct VM *vm, mrbc_class *cls, const char *name, mrbc_f
 
   method->type = 'm';
   method->c_func = 1;
-  method->sym_id = mrbc_str_to_symid( name );
+  // FIXME: method->sym_id じゃなくて変なアドレスに書き込まれる
+  mrbc_sym sym_id = mrbc_str_to_symid( name );
+  method->sym_id = sym_id;
+  // method->sym_id = mrbc_str_to_symid( name );
   if( method->sym_id < 0 ) {
     mrbc_raise(vm, MRBC_CLASS(Exception), "Overflow MAX_SYMBOLS_COUNT");
   }

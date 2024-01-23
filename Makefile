@@ -28,7 +28,8 @@ pvsneslibfont.pic: pvsneslibfont.png
 
 bitmaps : pvsneslibfont.pic
 
-src/main.rb.bytecode.c: src/main.rb
+src/main.c : src/main.rb.bytecode.c
+src/main.rb.bytecode.c : src/main.rb
 	mrbc --remove-lv -Bmrbbuf -o src/main.rb.bytecode.c $<
 
 FORCE:

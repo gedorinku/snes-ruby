@@ -4,6 +4,8 @@
 #include <stdlib.h>
 #include "mrubyc.h"
 
+#include "c_snes.h"
+
 #include "main.rb.bytecode.c"
 
 extern char tilfont, palfont;
@@ -19,6 +21,8 @@ int run()
         consoleDrawText(10, 10, "vm is null");
         return -1;
     }
+
+    snes_init_class_snes(vm);
 
     if (mrbc_load_mrb(vm, mrbbuf) != 0)
     {
@@ -54,6 +58,9 @@ int main(void)
     bgSetDisable(1);
     bgSetDisable(2);
 
+    // Wait for nothing :P
+    setScreenOn();
+
     /*
         start mruby/c
     */
@@ -61,9 +68,6 @@ int main(void)
     char res[16];
     sprintf(res, "ret: %d", ret);
     consoleDrawText(10, 10, res);
-
-    // Wait for nothing :P
-    setScreenOn();
 
     while (1)
     {
