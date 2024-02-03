@@ -3,4 +3,4 @@
 
 void snes_init_class_snes(struct VM *vm);
 
-#endif	// C_SNES_H_
+#endif  // C_SNES_H_
