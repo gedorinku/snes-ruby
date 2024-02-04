@@ -1,6 +1,8 @@
 #include <snes.h>
 
+#include "c_snes/c_bg.h"
 #include "c_snes/c_console.h"
+#include "c_snes/c_pad.h"
 #include "mrubyc.h"
 
 static void c_snes_wait_for_vblank(mrbc_vm *vm, mrbc_value v[], int argc) {
@@ -12,5 +14,7 @@ void snes_init_class_snes(struct VM *vm) {
 
   mrbc_define_method(vm, cls, "wait_for_vblank", c_snes_wait_for_vblank);
 
+  snes_init_class_bg(vm, cls);
   snes_init_class_console(vm, cls);
+  snes_init_class_pad(vm, cls);
 }
