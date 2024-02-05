@@ -2,10 +2,28 @@
 
 .section ".rodata1" superfree
 
-tilfont:
+patterns:
+.incbin "map_512_512.pic"
+patterns_end:
+
+.ends
+
+.section ".rodata2" superfree
+map:
+.incbin "map_512_512.map"
+map_end:
+
+palette:
+.incbin "map_512_512.pal"
+
+.ends
+
+.section ".rodata3" superfree
+
+snesfont:
 .incbin "pvsneslibfont.pic"
 
-palfont:
+snesfontpal:
 .incbin "pvsneslibfont.pal"
 
 .ends
