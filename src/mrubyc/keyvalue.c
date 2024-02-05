@@ -260,9 +260,10 @@ mrbc_value * mrbc_kv_get(mrbc_kv_handle *kvh, mrbc_sym sym_id)
 {
   int idx = binary_search(kvh, sym_id);
   if( idx < 0 ) return NULL;
-  if( kvh->data[idx].sym_id != sym_id ) return NULL;
+  mrbc_kv *d = kvh->data + idx;
+  if( d->sym_id != sym_id ) return NULL;
 
-  return &kvh->data[idx].value;
+  return &d->value;
 }
 
 
