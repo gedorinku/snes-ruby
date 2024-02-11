@@ -2,6 +2,7 @@
 
 #include "c_snes/c_bg.h"
 #include "c_snes/c_console.h"
+#include "c_snes/c_oam.h"
 #include "c_snes/c_pad.h"
 #include "mrubyc.h"
 
@@ -16,5 +17,6 @@ void snes_init_class_snes(struct VM *vm) {
 
   snes_init_class_bg(vm, cls);
   snes_init_class_console(vm, cls);
+  snes_init_class_oam(vm, cls);
   snes_init_class_pad(vm, cls);
 }

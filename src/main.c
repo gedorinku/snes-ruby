@@ -9,6 +9,8 @@
 extern char patterns, patterns_end;
 extern char palette;
 extern char map, map_end;
+extern char gfxpsrite, gfxpsrite_end;
+extern char palsprite, palsprite_end;
 
 int run() {
   mrbc_init_global();
@@ -40,11 +42,16 @@ int main(void) {
 
   bgInitTileSet(1, &patterns, &palette, 0, (&patterns_end - &patterns), 16 * 2,
                 BG_16COLORS, 0x4000);
-
   bgInitMapSet(1, &map, (&map_end - &map), SC_64x64, 0x1000);
 
   bgSetGfxPtr(0, 0x2000);
   bgSetMapPtr(0, 0x6800, SC_32x32);
+
+  oamInitGfxSet(&gfxpsrite, (&gfxpsrite_end - &gfxpsrite), &palsprite,
+                (&palsprite_end - &palsprite), 0, 0x0000, OBJ_SIZE16_L32);
+  oamSet(0, 0, 0, 3, 0, 0, 0, 0);
+  oamSetEx(0, OBJ_SMALL, OBJ_SHOW);
+  oamSetVisible(0, OBJ_SHOW);
 
   setMode(BG_MODE1, 0);
   bgSetDisable(2);

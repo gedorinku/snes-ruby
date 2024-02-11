@@ -16,6 +16,14 @@ map_end:
 palette:
 .incbin "map_512_512.pal"
 
+gfxpsrite:
+.incbin "sprites.pic"
+gfxpsrite_end:
+
+palsprite:
+.incbin "sprites.pal"
+palsprite_end:
+
 .ends
 
 .section ".rodata3" superfree
