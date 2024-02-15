@@ -47,6 +47,7 @@ int main(void) {
   bgSetMapPtr(0, 0x6800, SC_32x32);
 
   setMode(BG_MODE1, 0);
+  bgSetDisable(0);
   bgSetDisable(2);
   setScreenOn();
 
