@@ -82,8 +82,7 @@ mrbc_value mrbc_hash_dup(struct VM *vm, mrbc_value *src);
 /*! get size
 */
 static inline int mrbc_hash_size(const mrbc_value *hash) {
-  // return hash->hash->n_stored / 2;
-  return hash->hash->n_stored >> 1;
+  return hash->hash->n_stored / 2;
 }
 
 #if defined(MRBC_ALLOC_VMID)

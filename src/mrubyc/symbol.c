@@ -97,8 +97,7 @@ static int search_builtin_symbol( const char *str )
   int right = sizeof(builtin_symbols) / sizeof(builtin_symbols[0]);
 
   while( left < right ) {
-    // int mid = (left + right) / 2;
-    int mid = (left + right) >> 1;
+    int mid = (left + right) / 2;
     const unsigned char *p1 = (const unsigned char *)builtin_symbols[mid];
     const unsigned char *p2 = (const unsigned char *)str;
 
