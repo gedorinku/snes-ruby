@@ -1,6 +1,6 @@
 #include <snes.h>
 
-#include "mrubyc.h"
+#include "sa1/mrubyc/mrubyc.h"
 
 static void c_snes_pad_wait_for_scan(mrbc_vm *vm, mrbc_value v[], int argc) {
   scanPads();

@@ -1,6 +1,6 @@
 #include <snes.h>
 
-#include "mrubyc.h"
+#include "sa1/mrubyc/mrubyc.h"
 
 static void c_snes_bg_scroll(mrbc_vm *vm, mrbc_value v[], int argc) {
   // if (argc != 3) {
