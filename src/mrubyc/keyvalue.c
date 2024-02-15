@@ -53,8 +53,7 @@ static int binary_search(mrbc_kv_handle *kvh, mrbc_sym sym_id)
   if( right < 0 ) return -1;
 
   while( left < right ) {
-    // int mid = (left + right) / 2;
-    int mid = (left + right) >> 1;
+    int mid = (left + right) / 2;
     if( kvh->data[mid].sym_id < sym_id ) {
       left = mid + 1;
     } else {
