@@ -3,7 +3,6 @@ KEY_DOWN = 1024
 KEY_RIGHT = 256
 KEY_LEFT = 512
 
-count = 1
 x = 0
 y = 0
 

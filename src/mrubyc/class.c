@@ -381,7 +381,8 @@ mrbc_method * mrbc_find_method( mrbc_method *r_method, mrbc_class *cls, mrbc_sym
     int left = 0;
 
     while( left < right ) {
-      int mid = (left + right) / 2;
+      // int mid = (left + right) / 2;
+      int mid = (left + right) >> 1;
       if( c->method_symbols[mid] < sym_id ) {
 	left = mid + 1;
       } else {

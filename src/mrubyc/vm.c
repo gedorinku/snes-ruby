@@ -79,7 +79,7 @@ static void send_by_name( struct VM *vm, mrbc_sym sym_id, int a, int c )
       mrbc_incref( &argv.array->data[i] );
     }
 
-    memmove( recv + narg + 1, recv + 2, sizeof(mrbc_value) * (karg * 2 + 1) );
+    memmove( recv + narg + 1, recv + 2, sizeof(mrbc_value) * ((karg << 1) + 1) );
     memcpy( recv + 1, argv.array->data, sizeof(mrbc_value) * narg );
 
     mrbc_decref(&argv);
@@ -93,11 +93,11 @@ static void send_by_name( struct VM *vm, mrbc_sym sym_id, int a, int c )
       if( !h.hash ) return;	// ENOMEM
 
       mrbc_value *r1 = recv + narg;
-      memcpy( h.hash->data, r1, sizeof(mrbc_value) * karg * 2 );
-      h.hash->n_stored = karg * 2;
+      memcpy( h.hash->data, r1, sizeof(mrbc_value) * (karg << 1) );
+      h.hash->n_stored = (karg << 1);
 
-      mrbc_value block = r1[karg * 2];
-      memset( r1 + 2, 0, sizeof(mrbc_value) * (karg * 2 - 1) );
+      mrbc_value block = r1[(karg << 1)];
+      memset( r1 + 2, 0, sizeof(mrbc_value) * ((karg << 1) - 1) );
       *r1++ = h;
       *r1 = block;
     }
