@@ -25,6 +25,7 @@ int main(void) {
   oamSetVisible(0, OBJ_SHOW);
 
   setMode(BG_MODE1, 0);
+  bgSetDisable(0);
   bgSetDisable(2);
   setScreenOn();
 
