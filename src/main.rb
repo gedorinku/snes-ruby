@@ -1,3 +1,5 @@
+puts 'hello world'
+
 KEY_UP = 2048
 KEY_DOWN = 1024
 KEY_RIGHT = 256
@@ -24,11 +26,11 @@ while true
     x -= 2
   end
 
-  SNES::OAM.set(0, x, y, 3, 0, 0, 0, 0)
+  # SNES::OAM.set(0, x, y, 3, 0, 0, 0, 0)
 
   bg_y += 2
 
-  SNES::Bg.scroll(1, 0, bg_y)
+  SNES::Bg.scroll(1, x, y)
 
   SNES.wait_for_vblank()
 end

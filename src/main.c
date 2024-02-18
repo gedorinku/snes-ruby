@@ -30,7 +30,6 @@ int main(void) {
   setScreenOn();
 
   while (1) {
-    WaitForVBlank();
   }
   return 0;
 }

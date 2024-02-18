@@ -14,8 +14,8 @@ static void c_snes_bg_scroll(mrbc_vm *vm, mrbc_value v[], int argc) {
   //   return;
   // }
 
-  // bgSetScroll(v[1].i, v[2].i, v[3].i);
-  call_s_cpu(bgSetScroll, 0, NULL, sizeof(v[0].i) * 3, v[1].i, v[2].i, v[3].i);
+  call_s_cpu(bgSetScroll, sizeof(u8) + sizeof(u16) * 2, (u8)v[1].i, (u16)v[2].i,
+             (u16)v[3].i);
 }
 
 void snes_init_class_bg(struct VM *vm, mrbc_class *snes_class) {
