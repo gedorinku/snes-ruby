@@ -2,6 +2,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+#include <snes.h>
+
 extern char patterns, patterns_end;
 extern char palette;
 extern char map, map_end;
@@ -30,6 +32,7 @@ int main(void) {
   setScreenOn();
 
   while (1) {
+    listen_call_from_sa1();
   }
   return 0;
 }
