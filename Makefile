@@ -1,7 +1,7 @@
 export PVSNESLIB_HOME := $(dir $(realpath $(firstword $(MAKEFILE_LIST))))pvsneslib
 PVSNESLIB_DEBUG = 1
 
-CFLAGS += -Isrc/mrubyc -Isrc/musl -DMRBC_USE_FLOAT=0 -DMRBC_ALLOC_LIBC=1
+CFLAGS += -Isrc -Isrc/musl -DMRBC_USE_FLOAT=0 -DMRBC_ALLOC_LIBC=1
 
 include ${PVSNESLIB_HOME}/devkitsnes/snes_rules
 
@@ -12,7 +12,7 @@ include ${PVSNESLIB_HOME}/devkitsnes/snes_rules
 export ROMNAME := hello_world
 
 # all: src/main.rb.bytecode.c bitmaps $(ROMNAME).sfc
-all: pvsneslib src/main.rb.bytecode.c bitmaps $(ROMNAME).sfc
+all: pvsneslib src/sa1/main.rb.bytecode.c bitmaps $(ROMNAME).sfc
 
 clean: cleanBuildRes cleanRom cleanGfx
 	# $(MAKE) -C $(PVSNESLIB_HOME) clean
@@ -28,8 +28,15 @@ pvsneslibfont.pic: pvsneslibfont.png
 
 bitmaps : pvsneslibfont.pic map_512_512.pic sprites.pic
 
-src/main.c : src/main.rb.bytecode.c
-src/main.rb.bytecode.c : src/main.rb
-	mrbc --remove-lv -Bmrbbuf -o src/main.rb.bytecode.c $<
+src/sa1/%.ps: src/sa1/%.c
+	@echo Compiling to .ps ... $(notdir $<)
+	$(CC) $(CFLAGS) -sa1 -Wall -c $< -o $@
+ifeq ($(DEBUG),1)
+	cp $@ $@.01.dbg
+endif
+
+src/sa1/main.c : src/sa1/main.rb.bytecode.c
+src/sa1/main.rb.bytecode.c : src/main.rb
+	mrbc --remove-lv -Bmrbbuf -o $@ $<
 
 FORCE:

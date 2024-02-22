@@ -89,20 +89,20 @@ int mrbc_get_vm_id(void *ptr);
 static inline void mrbc_init_alloc(void *ptr, unsigned int size) {}
 static inline void mrbc_cleanup_alloc(void) {}
 static inline void *mrbc_raw_alloc(unsigned int size) {
-  return malloc(size);
+  return sa1_malloc(size);
 }
 static inline void *mrbc_raw_alloc_no_free(unsigned int size) {
-  return malloc(size);
+  return sa1_malloc(size);
 }
 static inline void mrbc_raw_free(void *ptr) {
-  free(ptr);
+  sa1_malloc(ptr);
 }
 static inline void *mrbc_raw_realloc(void *ptr, unsigned int size) {
-  void *new_ptr = malloc(size);
+  void *new_ptr = sa1_malloc(size);
   if (new_ptr == NULL) return NULL;
 
   memcpy(new_ptr, ptr, size);
-  free(ptr);
+  sa1_malloc(ptr);
   return new_ptr;
   // return realloc(ptr, size);
 }
@@ -116,14 +116,14 @@ static inline void *mrbc_raw_realloc(void *ptr, unsigned int size) {
  * }
 */
 static inline void mrbc_free(const struct VM *vm, void *ptr) {
-  free(ptr);
+  sa1_malloc(ptr);
 }
 static inline void * mrbc_realloc(const struct VM *vm, void *ptr, unsigned int size) {
   return mrbc_raw_realloc(ptr, size);
   // return realloc(ptr, size);
 }
 static inline void *mrbc_alloc(const struct VM *vm, unsigned int size) {
-  return malloc(size);
+  return sa1_malloc(size);
 }
 static inline void mrbc_free_all(const struct VM *vm) {
 }

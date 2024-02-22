@@ -2,40 +2,13 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#include "c_snes.h"
-#include "main.rb.bytecode.c"
-#include "mrubyc.h"
+#include <snes.h>
 
 extern char patterns, patterns_end;
 extern char palette;
 extern char map, map_end;
 extern char gfxpsrite, gfxpsrite_end;
 extern char palsprite, palsprite_end;
-
-int run() {
-  mrbc_init_global();
-  mrbc_init_class();
-
-  mrbc_vm *vm = mrbc_vm_open(NULL);
-  if (vm == NULL) {
-    return -1;
-  }
-
-  snes_init_class_snes(vm);
-
-  if (mrbc_load_mrb(vm, mrbbuf) != 0) {
-    return -1;
-  }
-
-  mrbc_vm_begin(vm);
-  int ret = mrbc_vm_run(vm);
-  mrbc_vm_end(vm);
-  mrbc_vm_close(vm);
-
-  return ret;
-}
-
-volatile int ret;
 
 int main(void) {
   consoleInit();
@@ -58,10 +31,8 @@ int main(void) {
   bgSetDisable(2);
   setScreenOn();
 
-  ret = run();
-
   while (1) {
-    WaitForVBlank();
+    listen_call_from_sa1();
   }
   return 0;
 }

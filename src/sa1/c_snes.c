@@ -4,10 +4,10 @@
 #include "c_snes/c_console.h"
 #include "c_snes/c_oam.h"
 #include "c_snes/c_pad.h"
-#include "mrubyc.h"
+#include "sa1/mrubyc/mrubyc.h"
 
 static void c_snes_wait_for_vblank(mrbc_vm *vm, mrbc_value v[], int argc) {
-  WaitForVBlank();
+  call_s_cpu(WaitForVBlank, 0);
 }
 
 void snes_init_class_snes(struct VM *vm) {

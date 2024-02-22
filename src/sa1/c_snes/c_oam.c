@@ -1,6 +1,6 @@
 #include <snes.h>
 
-#include "mrubyc.h"
+#include "sa1/mrubyc/mrubyc.h"
 
 static void c_snes_oam_set(mrbc_vm *vm, mrbc_value v[], int argc) {
   oamSet(v[1].i, v[2].i, v[3].i, v[4].i, v[5].i, v[6].i, v[7].i, v[8].i);
