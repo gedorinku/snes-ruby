@@ -1,5 +1,6 @@
 puts 'hello world'
 
+KEY_A = 128
 KEY_UP = 2048
 KEY_DOWN = 1024
 KEY_RIGHT = 256
@@ -26,11 +27,16 @@ while true
     x -= 2
   end
 
+  if pad & KEY_A != 0
+    SNES::SPC.play_sound(0)
+  end
+
   # SNES::OAM.set(0, x, y, 3, 0, 0, 0, 0)
 
   bg_y += 2
 
   SNES::Bg.scroll(1, x, y)
 
-  SNES.wait_for_vblank()
+  SNES::SPC.process
+  SNES.wait_for_vblank
 end
