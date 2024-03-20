@@ -2,20 +2,25 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#include <snes.h>
-
 extern char patterns, patterns_end;
 extern char palette;
 extern char map, map_end;
 extern char gfxpsrite, gfxpsrite_end;
 extern char palsprite, palsprite_end;
 
+extern char soundbrr, soundbrrend;
+brrsamples tadasound;
+
 int main(void) {
+  spcBoot();
+
   consoleInit();
 
   bgInitTileSet(1, &patterns, &palette, 0, (&patterns_end - &patterns), 16 * 2,
                 BG_16COLORS, 0x4000);
   bgInitMapSet(1, &map, (&map_end - &map), SC_64x64, 0x1000);
+
+  spcAllocateSoundRegion(39);
 
   bgSetGfxPtr(0, 0x2000);
   bgSetMapPtr(0, 0x6800, SC_32x32);
@@ -30,6 +35,8 @@ int main(void) {
   bgSetDisable(0);
   bgSetDisable(2);
   setScreenOn();
+
+  spcSetSoundEntry(15, 15, 4, &soundbrrend - &soundbrr, &soundbrr, &tadasound);
 
   while (1) {
     listen_call_from_sa1();
