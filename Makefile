@@ -26,7 +26,7 @@ pvsneslibfont.pic: pvsneslibfont.png
 	@echo convert font with no tile reduction ... $(notdir $@)
 	$(GFXCONV) -n -gs8 -po16 -pc16 -pe0 -mR! -m! -fpng $<
 
-bitmaps : pvsneslibfont.pic map_512_512.pic sprites.pic
+bitmaps : pvsneslibfont.pic map_512_512.pic sprites.pic tiles.pic
 
 src/sa1/%.ps: src/sa1/%.c
 	@echo Compiling to .ps ... $(notdir $<)
