@@ -6,6 +6,9 @@ KEY_LEFT = 512
 
 MAX_Y = 224 - 16
 
+tile_maps = SNES::Bg.default_tile_maps(1)
+tile_maps[2] = 3
+
 x = 0
 y = 0
 player_dy = 0
@@ -39,6 +42,8 @@ while true
   SNES::OAM.set(0, 0, player_y, 3, 0, 0, 0, 0)
 
   SNES::Bg.scroll(1, x, y)
+
+  SNES::Bg.update_tile_map(1, tile_maps)
 
   SNES::SPC.process
   SNES.wait_for_vblank
