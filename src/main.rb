@@ -13,13 +13,16 @@ BLOCK_MAP = [
 ]
 
 class BlockPair
-  GAP = 10
+  GAP = 10 * 8
+  # FIXME: 2個目以降の const が参照できない?
+  # WIDTH = 24
 
   attr_reader :x, :y
 
   def initialize(x, y)
     @x = x
     @y = y
+    @width = 24
   end
 
   def render(tile_maps)
@@ -39,7 +42,7 @@ class BlockPair
       i += 1
     end
 
-    lower_block_tile_y = gap_tile_y + GAP
+    lower_block_tile_y = gap_tile_y + GAP / 8
 
     i = 0
     while i < BLOCK_MAP.size && lower_block_tile_y + i < 32
@@ -50,6 +53,11 @@ class BlockPair
       end
       i += 1
     end
+  end
+
+  def intersects?(player)
+    @x <= player.x + player.width && player.x <= @x + @width &&
+      (player.y <= @y || @y + GAP <= player.y + player.height)
   end
 end
 
@@ -72,26 +80,44 @@ render_block_pairs(block_pairs, tile_maps)
 
 SNES::Bg.update_tile_map(1, tile_maps)
 
-x = 0
-y = 0
+class Player
+  attr_accessor :x, :y, :width, :height
+
+  def initialize(x, y, width, height)
+    @x = x
+    @y = y
+    @width = width
+    @height = height
+  end
+
+  def render(camera_x, camera_y)
+    SNES::OAM.set(0, @x - camera_x, @y - camera_y, 3, 0, 0, 0, 0)
+  end
+end
+
+player = Player.new(0, MAX_Y / 2, 8, 8)
+
+camera_x = 0
+camera_y = 0
+
+# TODO: Playerにいれる
 player_dy = 0
-player_y = MAX_Y / 2
 
 while true
   SNES::Pad.wait_for_scan
   pad = SNES::Pad.current(0)
 
   if pad & KEY_UP != 0
-    y -= 2
+    camera_y -= 2
   end
   if pad & KEY_DOWN != 0
-    y += 2
+    camera_y += 2
   end
   if pad & KEY_RIGHT != 0
-    x += 2
+    camera_x += 2
   end
   if pad & KEY_LEFT != 0
-    x -= 2
+    camera_x -= 2
   end
 
   if pad & KEY_A != 0
@@ -100,11 +126,16 @@ while true
 
   player_dy += 3
   player_dy = 200 if 200 < player_dy
-  player_y += player_dy / 10
-  # puts "y: #{player_y}, dy: #{player_dy}"
-  SNES::OAM.set(0, 0, player_y, 3, 0, 0, 0, 0)
+  # player.y += player_dy / 10
+  player.y = camera_y + MAX_Y / 2
+  player.x = camera_x
+  player.render(camera_x, camera_y)
 
-  SNES::Bg.scroll(1, x, y)
+  if block_pairs.first.intersects?(player)
+    SNES::SPC.play_sound(0)
+  end
+
+  SNES::Bg.scroll(1, camera_x, camera_y)
 
   SNES::SPC.process
   SNES.wait_for_vblank
