@@ -14,8 +14,8 @@ BLOCK_MAP = [
 
 class BlockPair
   # FIXME: const が参照できない?
+  WIDTH = 24
   # GAP = 10 * 8
-  # WIDTH = 24
 
   attr_reader :x, :y
 
@@ -23,9 +23,6 @@ class BlockPair
     @x = x
     @y = y
     @gap = 10 * 8
-    @width = 24
-
-    p "new, #{@gap}"
   end
 
   def render(tile_maps)
@@ -45,7 +42,6 @@ class BlockPair
       i += 1
     end
 
-    p "@gap: #{@gap}, #{@gap.object_id % 0x10000}"
     lower_block_tile_y = gap_tile_y + @gap / 8
 
     i = 0
@@ -60,7 +56,7 @@ class BlockPair
   end
 
   def intersects?(player)
-    @x <= player.x + player.width && player.x <= @x + @width &&
+    @x <= player.x + player.width && player.x <= @x + WIDTH &&
       (player.y <= @y || @y + @gap <= player.y + player.height)
   end
 end
@@ -70,7 +66,6 @@ end
 def render_block_pairs(block_pairs, tile_maps)
   i = 0
   while i < block_pairs.size
-    puts "block_pairs[#{i}]: #{block_pairs[i].object_id.to_s(16)}"
     block_pairs[i].render(tile_maps)
     i += 1
   end
@@ -96,7 +91,6 @@ end
 
 tile_maps = Array.new(32 * 32, 0)
 block_pairs = generate_block_pairs(0...(32*8))
-p "block_pairs.size: #{block_pairs.size}"
 render_block_pairs(block_pairs, tile_maps)
 
 SNES::Bg.update_tile_map(1, tile_maps)
@@ -128,20 +122,20 @@ while true
   SNES::Pad.wait_for_scan
   pad = SNES::Pad.current(0)
 
-  # if pad & KEY_UP != 0
-  #   camera_y -= 2
-  # end
-  # if pad & KEY_DOWN != 0
-  #   camera_y += 2
-  # end
-  # if pad & KEY_RIGHT != 0
-  #   camera_x += 2
-  # end
-  # if pad & KEY_LEFT != 0
-  #   camera_x -= 2
-  # end
+  if pad & KEY_UP != 0
+    camera_y -= 2
+  end
+  if pad & KEY_DOWN != 0
+    camera_y += 2
+  end
+  if pad & KEY_RIGHT != 0
+    camera_x += 2
+  end
+  if pad & KEY_LEFT != 0
+    camera_x -= 2
+  end
 
-  camera_x += 2
+  # camera_x += 2
 
   if pad & KEY_A != 0
     player_dy = -75
