@@ -95,14 +95,14 @@ static inline void *mrbc_raw_alloc_no_free(unsigned int size) {
   return sa1_malloc(size);
 }
 static inline void mrbc_raw_free(void *ptr) {
-  sa1_malloc(ptr);
+  sa1_free(ptr);
 }
 static inline void *mrbc_raw_realloc(void *ptr, unsigned int size) {
   void *new_ptr = sa1_malloc(size);
   if (new_ptr == NULL) return NULL;
 
   memcpy(new_ptr, ptr, size);
-  sa1_malloc(ptr);
+  sa1_free(ptr);
   return new_ptr;
   // return realloc(ptr, size);
 }
@@ -116,7 +116,7 @@ static inline void *mrbc_raw_realloc(void *ptr, unsigned int size) {
  * }
 */
 static inline void mrbc_free(const struct VM *vm, void *ptr) {
-  sa1_malloc(ptr);
+  sa1_free(ptr);
 }
 static inline void * mrbc_realloc(const struct VM *vm, void *ptr, unsigned int size) {
   return mrbc_raw_realloc(ptr, size);

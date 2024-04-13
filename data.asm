@@ -39,3 +39,18 @@ snesfontpal:
 .incbin "pvsneslibfont.pal"
 
 .ends
+
+.section ".rodata4" superfree
+
+tiles_patterns:
+.incbin "tiles.pic"
+tiles_patterns_end:
+
+tiles_map:
+.incbin "tiles.map"
+tiles_map_end:
+
+tiles_palette:
+.incbin "tiles.pal"
+
+.ends

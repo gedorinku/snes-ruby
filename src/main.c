@@ -1,10 +1,16 @@
 #include <snes.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 
-extern char patterns, patterns_end;
-extern char palette;
-extern char map, map_end;
+#include "bg.h"
+
+// extern char patterns, patterns_end;
+// extern char palette;
+// extern char map, map_end;
+extern char tiles_patterns, tiles_patterns_end;
+extern char tiles_palette;
+extern uint16_t tiles_map, tiles_map_end;
 extern char gfxpsrite, gfxpsrite_end;
 extern char palsprite, palsprite_end;
 
@@ -16,9 +22,15 @@ int main(void) {
 
   consoleInit();
 
-  bgInitTileSet(1, &patterns, &palette, 0, (&patterns_end - &patterns), 16 * 2,
-                BG_16COLORS, 0x4000);
-  bgInitMapSet(1, &map, (&map_end - &map), SC_64x64, 0x1000);
+  // bgInitTileSet(1, &patterns, &palette, 0, (&patterns_end - &patterns), 16 *
+  // 2,
+  //               BG_16COLORS, 0x4000);
+  // bgInitMapSet(1, &map, (&map_end - &map), SC_64x64, 0x1000);
+  bgInitTileSet(1, &tiles_patterns, &tiles_palette, 0,
+                (&tiles_patterns_end - &tiles_patterns), 16 * 2, BG_16COLORS,
+                0x4000);
+  bgInitMapSet(1, tiles_map, (&tiles_map_end - &tiles_map), SC_64x64,
+               SNES_BG_TILE_MAP_VRAM_ADDR);
 
   spcAllocateSoundRegion(39);
 

@@ -1,0 +1,1 @@
+#define SNES_BG_TILE_MAP_VRAM_ADDR (0x1000)
