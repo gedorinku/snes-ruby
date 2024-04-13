@@ -21,7 +21,7 @@ static void c_snes_bg_scroll(mrbc_vm *vm, mrbc_value v[], int argc) {
 
 static const u16 *default_tile_maps[4];
 static size_t default_tile_map_sizes[4];
-static u16 *tile_map_vram_addrs[4];
+static u16 tile_map_vram_addrs[4];
 
 static void c_snes_bg_get_default_tile_map(mrbc_vm *vm, mrbc_value v[],
                                            int argc) {
@@ -39,7 +39,8 @@ static void c_snes_bg_get_default_tile_map(mrbc_vm *vm, mrbc_value v[],
 
 static void c_snes_bg_update_tile_map(mrbc_vm *vm, mrbc_value v[], int argc) {
   const int bg = v[1].i;
-  const size_t n = v[2].array->n_stored;
+  const u16 offset = v[2].i;
+  const size_t n = v[3].array->n_stored;
 
   static u16 *buf;
   static size_t buf_n;
@@ -55,10 +56,10 @@ static void c_snes_bg_update_tile_map(mrbc_vm *vm, mrbc_value v[], int argc) {
 
   int i;
   for (i = 0; i < n; i++) {
-    buf[i] = v[2].array->data[i].i;
+    buf[i] = v[3].array->data[i].i;
   }
 
-  const u16 addr = tile_map_vram_addrs[bg];
+  const u16 addr = tile_map_vram_addrs[bg] + offset;
   call_s_cpu(snesw_wait_and_dma_to_vram, sizeof(char *) + sizeof(u16) * 2, buf,
              addr, (u16)(n * 2));
 }

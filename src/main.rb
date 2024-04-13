@@ -25,7 +25,7 @@ class BlockPair
     @gap = 10 * 8
   end
 
-  def render(tile_maps)
+  def render(tile_maps, offset_tiles)
     gap_tile_x = x / 8
     gap_tile_y = y / 8
 
@@ -36,7 +36,7 @@ class BlockPair
     while i < BLOCK_MAP.size && 0 <= upper_block_tile_y - i
       j = 0
       while j < BLOCK_MAP[i].size
-        tile_maps[32 * (upper_block_tile_y - i) + j + block_tile_x] = BLOCK_MAP[i][j]
+        tile_maps[32 * (upper_block_tile_y - i) + j + block_tile_x - offset_tiles] = BLOCK_MAP[i][j]
         j += 1
       end
       i += 1
@@ -48,7 +48,7 @@ class BlockPair
     while i < BLOCK_MAP.size && lower_block_tile_y + i < 32
       j = 0
       while j < BLOCK_MAP[i].size
-        tile_maps[32 * (lower_block_tile_y + i) + j + block_tile_x] = BLOCK_MAP[i][j]
+        tile_maps[32 * (lower_block_tile_y + i) + j + block_tile_x - offset_tiles] = BLOCK_MAP[i][j]
         j += 1
       end
       i += 1
@@ -59,14 +59,19 @@ class BlockPair
     @x <= player.x + player.width && player.x <= @x + WIDTH &&
       (player.y <= @y || @y + @gap <= player.y + player.height)
   end
+
+  def behind_of?(player)
+    @x + WIDTH < player.x
+  end
 end
 
 # @param [Array<BlockPair>] block_pairs
+# @param [Integer] offset
 # @param [Array<Integer>] tile_maps
-def render_block_pairs(block_pairs, tile_maps)
+def render_block_pairs(block_pairs, offset, tile_maps)
   i = 0
   while i < block_pairs.size
-    block_pairs[i].render(tile_maps)
+    block_pairs[i].render(tile_maps, offset)
     i += 1
   end
 end
@@ -79,21 +84,32 @@ def generate_block_pairs(x_range)
 
   res = []
 
-  begin
-    x += step
-    tile_y = 1 + SNES.rand(30)
-    # tile_y = 1
-    res << BlockPair.new(x, tile_y * 8)
-  end while x < x_range.last
+  x = step
+  i = 0
+  while i < 2
+    tmp = []
+    x_end = 32 * 8 * i
+    while x < x_end
+      tile_y = 1 + SNES.rand(15)
+      tmp << BlockPair.new(x, tile_y * 8)
+
+      x += step
+    end
+
+    tile_maps = Array.new(32 * 32, 0)
+    offset = tile_maps.size * i
+    render_block_pairs(tmp, offset, tile_maps)
+    SNES::Bg.update_tile_map(1, offset, tile_maps)
+
+    res += tmp
+
+    i += 1
+  end
 
   res
 end
 
-tile_maps = Array.new(32 * 32, 0)
 block_pairs = generate_block_pairs(0...(32*8))
-render_block_pairs(block_pairs, tile_maps)
-
-SNES::Bg.update_tile_map(1, tile_maps)
 
 class Player
   attr_accessor :x, :y, :width, :height
@@ -117,6 +133,9 @@ camera_y = 0
 
 # TODO: Playerにいれる
 player_dy = 0
+
+current_block_idx = 0
+current_block = block_pairs.first
 
 while true
   SNES::Pad.wait_for_scan
@@ -148,8 +167,14 @@ while true
   player.x = camera_x
   player.render(camera_x, camera_y)
 
-  if block_pairs.first.intersects?(player)
+  if current_block.intersects?(player)
     SNES::SPC.play_sound(0)
+  end
+
+  if current_block.behind_of?(player)
+    current_block_idx += 1
+    current_block_idx %= block_pairs.size
+    current_block = block_pairs[current_block_idx]
   end
 
   SNES::Bg.scroll(1, camera_x, camera_y)
