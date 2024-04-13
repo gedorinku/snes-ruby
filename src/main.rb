@@ -137,44 +137,43 @@ player_dy = 0
 current_block_idx = 0
 current_block = block_pairs.first
 
+game_state = :running
+
 while true
   SNES::Pad.wait_for_scan
   pad = SNES::Pad.current(0)
 
-  if pad & KEY_UP != 0
-    camera_y -= 2
-  end
-  if pad & KEY_DOWN != 0
-    camera_y += 2
-  end
-  if pad & KEY_RIGHT != 0
+  if game_state == :running
+    if pad & KEY_A != 0
+      player_dy = -60
+    end
+
     camera_x += 2
-  end
-  if pad & KEY_LEFT != 0
-    camera_x -= 2
-  end
 
-  # camera_x += 2
+    player_dy += 7
+    player_dy = 200 if 200 < player_dy
+    player.y += player_dy / 10
+    player.x = camera_x
+    player.render(camera_x, camera_y)
 
-  if pad & KEY_A != 0
-    player_dy = -60
-  end
+    if current_block.intersects?(player) || player.y < 0 || MAX_Y <= player.y
+      game_state = :game_over
+      SNES::SPC.play_sound(0)
+    end
 
-  player_dy += 7
-  player_dy = 200 if 200 < player_dy
-  player.y += player_dy / 10
-  # player.y = camera_y + MAX_Y / 2
-  player.x = camera_x
-  player.render(camera_x, camera_y)
-
-  if current_block.intersects?(player)
-    SNES::SPC.play_sound(0)
-  end
-
-  if current_block.behind_of?(player)
-    current_block_idx += 1
-    current_block_idx %= block_pairs.size
-    current_block = block_pairs[current_block_idx]
+    if current_block.behind_of?(player)
+      current_block_idx += 1
+      current_block_idx %= block_pairs.size
+      current_block = block_pairs[current_block_idx]
+    end
+  else
+    if pad & KEY_A != 0
+      player = Player.new(0, MAX_Y / 2, 8, 8)
+      camera_x = 0
+      camera_y = 0
+      player_dy = 0
+      game_state = :running
+    end
   end
 
   SNES::Bg.scroll(1, camera_x, camera_y)
