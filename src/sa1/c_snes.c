@@ -8,7 +8,7 @@
 #include "sa1/mrubyc/mrubyc.h"
 
 static void c_snes_wait_for_vblank(mrbc_vm *vm, mrbc_value v[], int argc) {
-  call_s_cpu(WaitForVBlank, 0);
+  // call_s_cpu(WaitForVBlank, 0);
 }
 
 static void c_snes_rand(mrbc_vm *vm, mrbc_value v[], int argc) {
