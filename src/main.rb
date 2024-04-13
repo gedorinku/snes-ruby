@@ -76,10 +76,8 @@ def render_block_pairs(block_pairs, offset, tile_maps)
   end
 end
 
-# @param [Range] x_range
 # @return [Array<BlockPair>]
-def generate_block_pairs(x_range)
-  x = x_range.first
+def generate_block_pairs
   step = 8 * 8
 
   res = []
@@ -109,7 +107,7 @@ def generate_block_pairs(x_range)
   res
 end
 
-block_pairs = generate_block_pairs(0...(32*8))
+block_pairs = generate_block_pairs
 
 class Player
   attr_accessor :x, :y, :width, :height
