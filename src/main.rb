@@ -157,10 +157,10 @@ while true
   # camera_x += 2
 
   if pad & KEY_A != 0
-    player_dy = -75
+    player_dy = -60
   end
 
-  player_dy += 3
+  player_dy += 7
   player_dy = 200 if 200 < player_dy
   player.y += player_dy / 10
   # player.y = camera_y + MAX_Y / 2
