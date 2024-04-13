@@ -88,7 +88,7 @@ def generate_block_pairs(x_range)
   i = 0
   while i < 2
     tmp = []
-    x_end = 32 * 8 * i
+    x_end = 32 * 8 * (i + 1)
     while x < x_end
       tile_y = 1 + SNES.rand(15)
       tmp << BlockPair.new(x, tile_y * 8)
