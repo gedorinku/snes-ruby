@@ -175,6 +175,9 @@ while true
   end
 
   SNES::Bg.scroll(1, camera_x, camera_y)
+  if camera_x & 1 == 0
+    SNES::Bg.scroll(2, camera_x >> 1, 0)
+  end
 
   SNES::SPC.process
   SNES.wait_for_vblank
