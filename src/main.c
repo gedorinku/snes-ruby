@@ -34,14 +34,11 @@ int main(void) {
 
   bgInitMapSet(1, &tiles_map, (&tiles_map_end - &tiles_map), SC_64x64,
                SNES_BG_TILE_MAP_VRAM_ADDR);
-  bgInitMapSet(2, &background_far_map,
-               (&background_far_map_end - &background_far_map), SC_32x32,
+  // FIXME: 32bit - 32bit の引き算が正しくないのでハードコード
+  bgInitMapSet(2, &background_far_map, 32 * 32 * 2, SC_32x32,
                SNES_BG3_TILE_MAP_VRAM_ADDR);
 
   spcAllocateSoundRegion(39);
-
-  // bgSetGfxPtr(0, 0x2000);
-  // bgSetMapPtr(0, 0x6800, SC_32x32);
 
   oamInitGfxSet(&gfxpsrite, (&gfxpsrite_end - &gfxpsrite), &palsprite,
                 (&palsprite_end - &palsprite), 0, 0x0000, OBJ_SIZE16_L32);
