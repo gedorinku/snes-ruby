@@ -17,7 +17,7 @@ int run() {
 
   snes_init_class_snes(vm);
   snes_bg_set_default_tile_map(1, &tiles_map, (&tiles_map_end - &tiles_map),
-                               SNES_BG_TILE_MAP_VRAM_ADDR);
+                               SNES_BG2_TILE_MAP_VRAM_ADDR);
 
   if (mrbc_load_mrb(vm, mrbbuf) != 0) {
     return -1;
