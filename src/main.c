@@ -11,6 +11,9 @@
 extern char tiles_patterns, tiles_patterns_end;
 extern char tiles_palette;
 extern uint16_t tiles_map, tiles_map_end;
+extern char background_far_patterns, background_far_patterns_end;
+extern char background_far_palette;
+extern uint16_t background_far_map, background_far_map_end;
 extern char gfxpsrite, gfxpsrite_end;
 extern char palsprite, palsprite_end;
 
@@ -22,20 +25,23 @@ int main(void) {
 
   consoleInit();
 
-  // bgInitTileSet(1, &patterns, &palette, 0, (&patterns_end - &patterns), 16 *
-  // 2,
-  //               BG_16COLORS, 0x4000);
-  // bgInitMapSet(1, &map, (&map_end - &map), SC_64x64, 0x1000);
   bgInitTileSet(1, &tiles_patterns, &tiles_palette, 0,
                 (&tiles_patterns_end - &tiles_patterns), 16 * 2, BG_16COLORS,
                 0x4000);
-  bgInitMapSet(1, tiles_map, (&tiles_map_end - &tiles_map), SC_64x64,
+  bgInitTileSet(2, &background_far_patterns, &background_far_palette, 1,
+                (&background_far_patterns_end - &background_far_patterns),
+                4 * 2, BG_16COLORS, 0x3000);
+
+  bgInitMapSet(1, &tiles_map, (&tiles_map_end - &tiles_map), SC_64x64,
                SNES_BG_TILE_MAP_VRAM_ADDR);
+  bgInitMapSet(2, &background_far_map,
+               (&background_far_map_end - &background_far_map), SC_32x32,
+               SNES_BG3_TILE_MAP_VRAM_ADDR);
 
   spcAllocateSoundRegion(39);
 
-  bgSetGfxPtr(0, 0x2000);
-  bgSetMapPtr(0, 0x6800, SC_32x32);
+  // bgSetGfxPtr(0, 0x2000);
+  // bgSetMapPtr(0, 0x6800, SC_32x32);
 
   oamInitGfxSet(&gfxpsrite, (&gfxpsrite_end - &gfxpsrite), &palsprite,
                 (&palsprite_end - &palsprite), 0, 0x0000, OBJ_SIZE16_L32);
@@ -45,7 +51,6 @@ int main(void) {
 
   setMode(BG_MODE1, 0);
   bgSetDisable(0);
-  bgSetDisable(2);
   setScreenOn();
 
   spcSetSoundEntry(15, 15, 4, &soundbrrend - &soundbrr, &soundbrr, &tadasound);
