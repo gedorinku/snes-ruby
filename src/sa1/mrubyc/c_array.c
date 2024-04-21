@@ -565,10 +565,13 @@ static void c_array_new(struct VM *vm, mrbc_value v[], int argc)
     return;
   }
 
+  // FIXME: 1つの式にまとめると分岐が壊れる
+  const int valid_num = mrbc_type(v[1]) == MRBC_TT_INTEGER && mrbc_integer(v[1]) >= 0;
+
   /*
     in case of new(num)
   */
-  if( argc == 1 && mrbc_type(v[1]) == MRBC_TT_INTEGER && mrbc_integer(v[1]) >= 0 ) {
+  if( argc == 1 && valid_num ) {
     int num = mrbc_integer(v[1]);
     mrbc_value ret = mrbc_array_new(vm, num);
     if( ret.array == NULL ) return;		// ENOMEM
@@ -583,7 +586,7 @@ static void c_array_new(struct VM *vm, mrbc_value v[], int argc)
   /*
     in case of new(num, value)
   */
-  if( argc == 2 && mrbc_type(v[1]) == MRBC_TT_INTEGER && mrbc_integer(v[1]) >= 0 ) {
+  if( argc == 2 && valid_num ) {
     int num = mrbc_integer(v[1]);
     mrbc_value ret = mrbc_array_new(vm, num);
     if( ret.array == NULL ) return;		// ENOMEM

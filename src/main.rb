@@ -94,7 +94,7 @@ def generate_block_pairs
       x += step
     end
 
-    tile_maps = Array.new(32 * 32, 0)
+    tile_maps = Array.new(32 * 32, 18)
     offset = tile_maps.size * i
     render_block_pairs(tmp, offset, tile_maps)
     SNES::Bg.update_tile_map(1, offset, tile_maps)
@@ -175,6 +175,9 @@ while true
   end
 
   SNES::Bg.scroll(1, camera_x, camera_y)
+  if camera_x & 1 == 0
+    SNES::Bg.scroll(2, camera_x >> 1, 0)
+  end
 
   SNES::SPC.process
   SNES.wait_for_vblank

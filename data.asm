@@ -54,3 +54,18 @@ tiles_palette:
 .incbin "tiles.pal"
 
 .ends
+
+.section ".rodata5" superfree
+
+background_far_patterns:
+.incbin "background_far.pic"
+background_far_patterns_end:
+
+background_far_map:
+.incbin "background_far.map"
+background_far_map_end:
+
+background_far_palette:
+.incbin "background_far.pal"
+
+.ends
