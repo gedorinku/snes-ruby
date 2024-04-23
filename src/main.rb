@@ -33,10 +33,12 @@ class BlockPair
     upper_block_tile_y = gap_tile_y - 1
 
     i = 0
-    while i < BLOCK_MAP.size && 0 <= upper_block_tile_y - i
+    while 0 <= upper_block_tile_y - i
+      map_y = i < BLOCK_MAP.size ? i : BLOCK_MAP.size - 1
+
       j = 0
-      while j < BLOCK_MAP[i].size
-        tile_maps[32 * (upper_block_tile_y - i) + j + block_tile_x - offset_tiles] = BLOCK_MAP[i][j]
+      while j < BLOCK_MAP[map_y].size
+        tile_maps[32 * (upper_block_tile_y - i) + j + block_tile_x - offset_tiles] = BLOCK_MAP[map_y][j]
         j += 1
       end
       i += 1
@@ -44,11 +46,15 @@ class BlockPair
 
     lower_block_tile_y = gap_tile_y + @gap / 8
 
+    vflip_flag = 0x8000
+
     i = 0
-    while i < BLOCK_MAP.size && lower_block_tile_y + i < 32
+    while lower_block_tile_y + i < 32
+      map_y = i < BLOCK_MAP.size ? i : BLOCK_MAP.size - 1
+
       j = 0
-      while j < BLOCK_MAP[i].size
-        tile_maps[32 * (lower_block_tile_y + i) + j + block_tile_x - offset_tiles] = BLOCK_MAP[i][j]
+      while j < BLOCK_MAP[map_y].size
+        tile_maps[32 * (lower_block_tile_y + i) + j + block_tile_x - offset_tiles] = BLOCK_MAP[map_y][j] + vflip_flag
         j += 1
       end
       i += 1
