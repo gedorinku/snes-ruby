@@ -30,6 +30,10 @@ background_far.pic: background_far.bmp
 	@echo convert bitmap ... $(notdir $<)
 	$(GFX4CONV) -s 8 -o 4 -u 4 -e 4 -p -m -t bmp -i $<
 
+sprites.pic: sprites.bmp
+	@echo convert bitmap ... $(notdir $@)
+	$(GFX4CONV) -s 32 -o 16 -u 16 -t bmp -i $<
+
 %.pic: %.bmp
 	@echo convert bitmap ... $(notdir $<)
 	$(GFX4CONV) -s 8 -o 16 -u 16 -R -e 0 -p -m -t bmp -i $<

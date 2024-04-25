@@ -41,7 +41,7 @@ int main(void) {
   spcAllocateSoundRegion(39);
 
   oamInitGfxSet(&gfxpsrite, (&gfxpsrite_end - &gfxpsrite), &palsprite,
-                (&palsprite_end - &palsprite), 0, 0x0000, OBJ_SIZE16_L32);
+                (&palsprite_end - &palsprite), 0, 0x0000, OBJ_SIZE32_L64);
   oamSet(0, 0, 0, 3, 0, 0, 0, 0);
   oamSetEx(0, OBJ_SMALL, OBJ_SHOW);
   oamSetVisible(0, OBJ_SHOW);
