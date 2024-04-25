@@ -5,6 +5,7 @@ KEY_RIGHT = 256
 KEY_LEFT = 512
 
 MAX_Y = 224 - 16
+START_X = 32
 
 BLOCK_MAP = [
   [160, 161, 165],
@@ -62,8 +63,10 @@ class BlockPair
   end
 
   def intersects?(player)
-    @x <= player.x + player.width && player.x <= @x + WIDTH &&
-      (player.y <= @y || @y + @gap <= player.y + player.height)
+    box_x = player.box_x
+    box_y = player.box_y
+    @x <= box_x + player.width && box_x <= @x + WIDTH &&
+      (box_y <= @y || @y + @gap <= box_y + player.height)
   end
 
   def behind_of?(player)
@@ -88,7 +91,7 @@ def generate_block_pairs
 
   res = []
 
-  x = step
+  x = step + START_X
   i = 0
   while i < 2
     tmp = []
@@ -118,19 +121,27 @@ block_pairs = generate_block_pairs
 class Player
   attr_accessor :x, :y, :width, :height
 
-  def initialize(x, y, width, height)
+  def initialize(x, y)
     @x = x
     @y = y
-    @width = width
-    @height = height
+    @width = 16
+    @height = 14
   end
 
-  def render(camera_x, camera_y)
-    SNES::OAM.set(0, @x - camera_x, @y - camera_y, 3, 0, 0, 0, 0)
+  def box_x
+    @x + 2
+  end
+
+  def box_y
+    @y + 5
+  end
+
+  def render(camera_x, camera_y, frame)
+    SNES::OAM.set(0, @x - camera_x, @y - camera_y, 3, 0, 0, frame, 0)
   end
 end
 
-player = Player.new(0, MAX_Y / 2, 8, 8)
+player = Player.new(START_X, MAX_Y / 2)
 
 camera_x = 0
 camera_y = 0
@@ -157,12 +168,12 @@ while true
     player_dy += 7
     player_dy = 200 if 200 < player_dy
     player.y += player_dy / 10
-    player.x = camera_x
-    player.render(camera_x, camera_y)
+    player.x = camera_x + START_X
+    player.render(camera_x, camera_y, player_dy < 0 ? 0 : 4)
 
     if current_block.intersects?(player) || player.y < 0 || MAX_Y <= player.y
       game_state = :game_over
-      SNES::SPC.play_sound(0)
+      # SNES::SPC.play_sound(0)
     end
 
     if current_block.behind_of?(player)
@@ -172,7 +183,7 @@ while true
     end
   else
     if pad & KEY_A != 0
-      player = Player.new(0, MAX_Y / 2, 8, 8)
+      player = Player.new(START_X, MAX_Y / 2)
       camera_x = 0
       camera_y = 0
       player_dy = 0
@@ -185,6 +196,6 @@ while true
     SNES::Bg.scroll(2, camera_x >> 1, 0)
   end
 
-  SNES::SPC.process
+  # SNES::SPC.process
   SNES.wait_for_vblank
 end
