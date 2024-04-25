@@ -21,7 +21,7 @@ extern char soundbrr, soundbrrend;
 brrsamples tadasound;
 
 int main(void) {
-  spcBoot();
+  // spcBoot();
 
   consoleInit();
 
@@ -38,7 +38,7 @@ int main(void) {
   bgInitMapSet(2, &background_far_map, 32 * 32 * 2, SC_32x32,
                SNES_BG3_TILE_MAP_VRAM_ADDR);
 
-  spcAllocateSoundRegion(39);
+  // spcAllocateSoundRegion(39);
 
   oamInitGfxSet(&gfxpsrite, (&gfxpsrite_end - &gfxpsrite), &palsprite,
                 (&palsprite_end - &palsprite), 0, 0x0000, OBJ_SIZE32_L64);
@@ -50,7 +50,7 @@ int main(void) {
   bgSetDisable(0);
   setScreenOn();
 
-  spcSetSoundEntry(15, 15, 4, &soundbrrend - &soundbrr, &soundbrr, &tadasound);
+  // spcSetSoundEntry(15, 15, 4, &soundbrrend - &soundbrr, &soundbrr, &tadasound);
 
   while (1) {
     listen_call_from_sa1();

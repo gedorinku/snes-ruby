@@ -173,7 +173,7 @@ while true
 
     if current_block.intersects?(player) || player.y < 0 || MAX_Y <= player.y
       game_state = :game_over
-      SNES::SPC.play_sound(0)
+      # SNES::SPC.play_sound(0)
     end
 
     if current_block.behind_of?(player)
@@ -196,6 +196,6 @@ while true
     SNES::Bg.scroll(2, camera_x >> 1, 0)
   end
 
-  SNES::SPC.process
+  # SNES::SPC.process
   SNES.wait_for_vblank
 end
