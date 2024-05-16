@@ -17,8 +17,8 @@ extern uint16_t background_far_map, background_far_map_end;
 extern char gfxpsrite, gfxpsrite_end;
 extern char palsprite, palsprite_end;
 
-extern char soundbrr, soundbrrend;
-brrsamples tadasound;
+// extern char soundbrr, soundbrrend;
+// brrsamples tadasound;
 
 int main(void) {
   // spcBoot();

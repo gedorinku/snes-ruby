@@ -24,9 +24,9 @@ palsprite:
 .incbin "sprites.pal"
 palsprite_end:
 
-soundbrr:
-.incbin "tada.brr"
-soundbrrend:
+; soundbrr:
+; .incbin "tada.brr"
+; soundbrrend:
 
 .ends
 
